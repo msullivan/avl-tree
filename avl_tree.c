@@ -46,7 +46,7 @@ avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
 	int sub_l_height_new, sub_r_height_new;
 	int n;
 	avl_node_t *subtree;
-	
+
 	if (!root) {
 		return avl_new_node(NULL, NULL, data, 1);
 	}
@@ -62,7 +62,7 @@ avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
 	} else if (n < 0) {
 		/* needs to go on the left */
 		subtree = root->left;
-		
+
 		if (left_height <= right_height) {
 			/* simple case: just insert on the left */
 			root->left = avl_insert(subtree, data, cmp);
@@ -77,12 +77,12 @@ avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
 			root->left = avl_insert(subtree, data, cmp);
 
 			/* get the new heights of the subtrees */
-			sub_l_height = TREE_HEIGHT(subtree->left);
-			sub_r_height = TREE_HEIGHT(subtree->right);
-			
+			sub_l_height_new = TREE_HEIGHT(subtree->left);
+			sub_r_height_new = TREE_HEIGHT(subtree->right);
+
 			if (sub_l_height == root->height - 2 &&
 			    sub_l_height_new == root->height - 1) {
-				/* rotate left */
+				/* rotate right */
 				root = avl_rotate_right(root);
 			} else if (sub_r_height == root->height - 2 &&
 			           sub_r_height_new == root->height - 1) {
@@ -94,7 +94,7 @@ avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
 	} else {
 		/* needs to go on the right */
 		subtree = root->right;
-		
+
 		if (right_height <= left_height) {
 			/* simple case: just insert on the right */
 			root->right = avl_insert(subtree, data, cmp);
@@ -110,18 +110,18 @@ avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
 			root->right = avl_insert(subtree, data, cmp);
 
 			/* get the new heights of the subtrees */
-			sub_l_height = TREE_HEIGHT(subtree->left);
-			sub_r_height = TREE_HEIGHT(subtree->right);
-			
+			sub_l_height_new = TREE_HEIGHT(subtree->left);
+			sub_r_height_new = TREE_HEIGHT(subtree->right);
+
 			if (sub_r_height == root->height - 2 &&
 			    sub_r_height_new == root->height - 1) {
 				/* rotate left */
-				root = avl_rotate_right(root);
+				root = avl_rotate_left(root);
 			} else if (sub_l_height == root->height - 2 &&
 			           sub_l_height_new == root->height - 1) {
 				/* double rotation */
-				root->right = avl_rotate_left(subtree);
-				root = avl_rotate_right(root);
+				root->right = avl_rotate_right(subtree);
+				root = avl_rotate_left(root);
 			}
 
 
@@ -143,11 +143,11 @@ static void avl_check_invariant(avl_node_t *root)
 	right_height = TREE_HEIGHT(root->right);
 
 	if (abs(left_height - right_height) > 1) {
-		fprintf(stderr, "invariant violated at %d! %d, %d\n", root->debug,
+		printf("invariant violated at %d! %d, %d\n", root->debug,
 				left_height, right_height);
-		/*abort();*/
+		abort();
 	}
-	
+
 	avl_check_invariant(root->left);
 	avl_check_invariant(root->right);
 }
@@ -170,13 +170,13 @@ static avl_node_t *avl_rotate_right(avl_node_t *node)
 	avl_node_t *replacement = node->left;
 	if (!replacement)
 		return node;
-	
+
 	node->left = replacement->right;
 	replacement->right = node;
 
 	avl_update_height(replacement->right);
 	avl_update_height(replacement);
-	
+
 	return replacement;
 }
 
@@ -185,13 +185,13 @@ static avl_node_t *avl_rotate_left(avl_node_t *node)
 	avl_node_t *replacement = node->right;
 	if (!replacement)
 		return node;
-	
+
 	node->right = replacement->left;
 	replacement->left = node;
 
 	avl_update_height(replacement->left);
 	avl_update_height(replacement);
-	
+
 	return replacement;
 }
 
@@ -207,7 +207,7 @@ void avl_debug(avl_node_t *root)
 
 	l = root->left ? root->left->debug : 0;
 	r = root->right ? root->right->debug : 0;
-	
+
 	avl_debug(root->left);
 	printf("%d-%d-%d(%d,%d) ",
 	       root->debug, P_TO_INT(root->data), root->height, l, r);
@@ -254,7 +254,7 @@ int main(void)
 	int n, i;
 	avl_node_t *tree = NULL;
 
-	
+
 	for (i = 0; i < 100; i++) {
 		n = rand() % 100;
 		tree = avl_insert(tree, INT_TO_P(n), test_cmp);
