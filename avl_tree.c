@@ -208,11 +208,8 @@ static void avl_check_invariant(avl_node_t *root)
 
 static void avl_update_height(avl_node_t *node)
 {
-	int left_height = 0, right_height = 0;
-	if (node->left)
-		left_height = node->left->height;
-	if (node->right)
-		right_height = node->right->height;
+	int left_height = TREE_HEIGHT(node->left);
+	int right_height = TREE_HEIGHT(node->right);
 
 	node->height =
 		(left_height > right_height ? left_height : right_height) + 1;
