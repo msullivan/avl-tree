@@ -3,7 +3,6 @@
 #include <assert.h>
 
 typedef int (*avl_cmp_func)(void *, void *);
-typedef int (*avl_visit_func)(void *);
 
 typedef enum avl_balance_t { LEFT_HIGHER, RIGHT_HIGHER, SIDES_EQUAL }
 	avl_balance_t;
@@ -17,6 +16,12 @@ typedef struct avl_node_t {
 	int debug;
 } avl_node_t;
 
+typedef struct avl_tree_t {
+	avl_node_t *root;
+	avl_cmp_func cmp;
+} avl_tree_t;
+
+
 #define TREE_HEIGHT(n) ((n) ? ((n)->height) : 0)
 
 static avl_node_t *avl_rotate_right(avl_node_t *node);
@@ -24,22 +29,35 @@ static avl_node_t *avl_rotate_left(avl_node_t *node);
 static void avl_update_height(avl_node_t *node);
 static void avl_check_invariant(avl_node_t *root);
 
-
-avl_node_t *avl_new_node(avl_node_t *left, avl_node_t *right, void *data,
-                         int height)
+int avl_init(avl_tree_t *tree, avl_cmp_func cmp)
 {
-	static int debug = 1;
-	avl_node_t *node = calloc(1, sizeof(avl_node_t));
-	node->left = left;
-	node->right = right;
-	node->data = data;
-	node->height = height;
-	node->debug = debug++;
-	return node;
+	tree->root = NULL;
+	tree->cmp = cmp;
+	return 0;
 }
 
+void avl_node_init(avl_node_t *node, void *data)
+{
+	static int debug = 1;
+	node->left = NULL;
+	node->right = NULL;
+	node->data = data;
+	node->height = 1;
+	node->debug = debug++;
+}
+
+avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data,
+                            avl_cmp_func cmp);
+
+void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data)
+{
+	avl_node_init(node, data);
+	tree->root = avl_node_insert(tree->root, node, tree->cmp);
+}
+
+
 /* FIXME: far too much duplication */
-avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
+avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp)
 {
 	int left_height, right_height;
 	int sub_l_height, sub_r_height;
@@ -48,13 +66,12 @@ avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
 	avl_node_t *subtree;
 
 	if (!root) {
-		return avl_new_node(NULL, NULL, data, 1);
+		return data;
 	}
-
 
 	left_height = TREE_HEIGHT(root->left);
 	right_height = TREE_HEIGHT(root->right);
-	n = cmp(data, root->data);
+	n = cmp(data->data, root->data);
 
 	if (n == 0) {
 		/* aw, shit. figure out way to signal this */
@@ -65,7 +82,7 @@ avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
 
 		if (left_height <= right_height) {
 			/* simple case: just insert on the left */
-			root->left = avl_insert(subtree, data, cmp);
+			root->left = avl_node_insert(subtree, data, cmp);
 		} else {
 			/* tricky case... */
 			assert(subtree);
@@ -74,7 +91,7 @@ avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
 			sub_l_height = TREE_HEIGHT(subtree->left);
 			sub_r_height = TREE_HEIGHT(subtree->right);
 
-			root->left = avl_insert(subtree, data, cmp);
+			root->left = avl_node_insert(subtree, data, cmp);
 
 			/* get the new heights of the subtrees */
 			sub_l_height_new = TREE_HEIGHT(subtree->left);
@@ -97,7 +114,7 @@ avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
 
 		if (right_height <= left_height) {
 			/* simple case: just insert on the right */
-			root->right = avl_insert(subtree, data, cmp);
+			root->right = avl_node_insert(subtree, data, cmp);
 		} else {
 			/* tricky case... */
 			/* XXX: FIXME: likely wrong */
@@ -107,7 +124,7 @@ avl_node_t *avl_insert(avl_node_t *root, void *data, avl_cmp_func cmp)
 			sub_l_height = TREE_HEIGHT(subtree->left);
 			sub_r_height = TREE_HEIGHT(subtree->right);
 
-			root->right = avl_insert(subtree, data, cmp);
+			root->right = avl_node_insert(subtree, data, cmp);
 
 			/* get the new heights of the subtrees */
 			sub_l_height_new = TREE_HEIGHT(subtree->left);
@@ -228,16 +245,6 @@ void avl_display(avl_node_t *root, int level)
 	avl_display(root->right, level+1);
 }
 
-
-void avl_iterate(avl_node_t *root, avl_visit_func visit)
-{
-	if (!root)
-		return;
-	avl_iterate(root->left, visit);
-	visit(root->data);
-	avl_iterate(root->right, visit);
-}
-
 int test_print(void *p)
 {
 	printf("%d ", P_TO_INT(p));
@@ -249,20 +256,23 @@ int test_cmp(void *p, void *q)
 	return P_TO_INT(p) - P_TO_INT(q);
 }
 
+#define NUM_ELEMS 100
+#define MAX_VAL 100
+
 int main(void)
 {
 	int n, i;
-	avl_node_t *tree = NULL;
+	avl_tree_t tree;
+	avl_init(&tree, test_cmp);
 
-
-	for (i = 0; i < 100; i++) {
-		n = rand() % 100;
-		tree = avl_insert(tree, INT_TO_P(n), test_cmp);
-		avl_debug(tree); printf("\n");
-		avl_display(tree, 0);
-		avl_check_invariant(tree);
+	for (i = 0; i < NUM_ELEMS; i++) {
+		n = rand() % MAX_VAL;
+		avl_node_t *node = calloc(1, sizeof(*node));
+		avl_insert(&tree, node, INT_TO_P(n));
+		avl_debug(tree.root); printf("\n");
+		avl_display(tree.root, 0);
+		avl_check_invariant(tree.root);
 		printf("inserting %d\n", n);
-		/*avl_iterate(tree, test_print); printf("\n");*/
 	}
 
 	return 0;
