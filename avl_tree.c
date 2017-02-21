@@ -8,6 +8,7 @@ typedef enum avl_balance_t { LEFT_HIGHER, RIGHT_HIGHER, SIDES_EQUAL }
 	avl_balance_t;
 
 typedef struct avl_node_t {
+	struct avl_node_t *parent;
 	struct avl_node_t *left;
 	struct avl_node_t *right;
 	void *data;
@@ -42,6 +43,7 @@ int avl_init(avl_tree_t *tree,
 void avl_node_init(avl_node_t *node, void *data)
 {
 	static int debug = 1;
+	node->parent = NULL;
 	node->left = NULL;
 	node->right = NULL;
 	node->data = data;
@@ -71,6 +73,14 @@ avl_node_t *avl_lookup(avl_tree_t *tree, void *data)
 	return avl_node_lookup(tree->root, data, tree->lookup_cmp);
 }
 
+static inline void set_left(avl_node_t *root, avl_node_t *child) {
+	root->left = child;
+	if (child) child->parent = root;
+}
+static inline void set_right(avl_node_t *root, avl_node_t *child) {
+	root->right = child;
+	if (child) child->parent = root;
+}
 // insert:
 
 /* FIXME: far too much duplication */
@@ -99,7 +109,7 @@ avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp
 
 		if (left_height <= right_height) {
 			/* simple case: just insert on the left */
-			root->left = avl_node_insert(subtree, data, cmp);
+			set_left(root, avl_node_insert(subtree, data, cmp));
 		} else {
 			/* tricky case... */
 			assert(subtree);
@@ -108,7 +118,7 @@ avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp
 			sub_l_height = TREE_HEIGHT(subtree->left);
 			sub_r_height = TREE_HEIGHT(subtree->right);
 
-			root->left = avl_node_insert(subtree, data, cmp);
+			set_left(root, avl_node_insert(subtree, data, cmp));
 
 			/* get the new heights of the subtrees */
 			sub_l_height_new = TREE_HEIGHT(subtree->left);
@@ -121,7 +131,7 @@ avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp
 			} else if (sub_r_height == root->height - 2 &&
 			           sub_r_height_new == root->height - 1) {
 				/* double rotation */
-				root->left = avl_rotate_left(subtree);
+				set_left(root, avl_rotate_left(subtree));
 				root = avl_rotate_right(root);
 			}
 		}
@@ -131,7 +141,7 @@ avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp
 
 		if (right_height <= left_height) {
 			/* simple case: just insert on the right */
-			root->right = avl_node_insert(subtree, data, cmp);
+			set_right(root, avl_node_insert(subtree, data, cmp));
 		} else {
 			/* tricky case... */
 			/* XXX: FIXME: likely wrong */
@@ -141,7 +151,7 @@ avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp
 			sub_l_height = TREE_HEIGHT(subtree->left);
 			sub_r_height = TREE_HEIGHT(subtree->right);
 
-			root->right = avl_node_insert(subtree, data, cmp);
+			set_right(root, avl_node_insert(subtree, data, cmp));
 
 			/* get the new heights of the subtrees */
 			sub_l_height_new = TREE_HEIGHT(subtree->left);
@@ -154,7 +164,7 @@ avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp
 			} else if (sub_l_height == root->height - 2 &&
 			           sub_l_height_new == root->height - 1) {
 				/* double rotation */
-				root->right = avl_rotate_right(subtree);
+				set_right(root, avl_rotate_right(subtree));
 				root = avl_rotate_left(root);
 			}
 
@@ -173,13 +183,15 @@ void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data)
 }
 
 
-
 static void avl_check_invariant(avl_node_t *root)
 {
 	int left_height, right_height;
 
 	if (!root)
 		return;
+
+	assert(!root->left || root->left->parent == root);
+	assert(!root->right || root->right->parent == root);
 
 	left_height = TREE_HEIGHT(root->left);
 	right_height = TREE_HEIGHT(root->right);
@@ -213,8 +225,8 @@ static avl_node_t *avl_rotate_right(avl_node_t *node)
 	if (!replacement)
 		return node;
 
-	node->left = replacement->right;
-	replacement->right = node;
+	set_left(node, replacement->right);
+	set_right(replacement, node);
 
 	avl_update_height(replacement->right);
 	avl_update_height(replacement);
@@ -228,8 +240,8 @@ static avl_node_t *avl_rotate_left(avl_node_t *node)
 	if (!replacement)
 		return node;
 
-	node->right = replacement->left;
-	replacement->left = node;
+	set_right(node, replacement->left);
+	set_left(replacement, node);
 
 	avl_update_height(replacement->left);
 	avl_update_height(replacement);
