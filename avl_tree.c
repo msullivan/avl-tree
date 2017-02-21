@@ -18,7 +18,8 @@ typedef struct avl_node_t {
 
 typedef struct avl_tree_t {
 	avl_node_t *root;
-	avl_cmp_func cmp;
+	avl_cmp_func lookup_cmp;
+	avl_cmp_func insert_cmp;
 } avl_tree_t;
 
 
@@ -29,10 +30,12 @@ static avl_node_t *avl_rotate_left(avl_node_t *node);
 static void avl_update_height(avl_node_t *node);
 static void avl_check_invariant(avl_node_t *root);
 
-int avl_init(avl_tree_t *tree, avl_cmp_func cmp)
+int avl_init(avl_tree_t *tree,
+             avl_cmp_func lookup_cmp, avl_cmp_func insert_cmp)
 {
 	tree->root = NULL;
-	tree->cmp = cmp;
+	tree->lookup_cmp = lookup_cmp;
+	tree->insert_cmp = insert_cmp;
 	return 0;
 }
 
@@ -46,15 +49,29 @@ void avl_node_init(avl_node_t *node, void *data)
 	node->debug = debug++;
 }
 
-avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data,
-                            avl_cmp_func cmp);
-
-void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data)
+// lookup:
+avl_node_t *avl_node_lookup(avl_node_t *root, void *data, avl_cmp_func cmp)
 {
-	avl_node_init(node, data);
-	tree->root = avl_node_insert(tree->root, node, tree->cmp);
+	while (root) {
+		int n = cmp(data, root->data);
+		if (n == 0) {
+			break;
+		} else if (n < 0) {
+			root = root->left;
+		} else {
+			root = root->right;
+		}
+	}
+
+	return root;
 }
 
+avl_node_t *avl_lookup(avl_tree_t *tree, void *data)
+{
+	return avl_node_lookup(tree->root, data, tree->lookup_cmp);
+}
+
+// insert:
 
 /* FIXME: far too much duplication */
 avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp)
@@ -148,6 +165,14 @@ avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp
 	avl_update_height(root);
 	return root;
 }
+
+void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data)
+{
+	avl_node_init(node, data);
+	tree->root = avl_node_insert(tree->root, node, tree->insert_cmp);
+}
+
+
 
 static void avl_check_invariant(avl_node_t *root)
 {
@@ -263,16 +288,18 @@ int main(void)
 {
 	int n, i;
 	avl_tree_t tree;
-	avl_init(&tree, test_cmp);
+	avl_init(&tree, test_cmp, test_cmp);
 
 	for (i = 0; i < NUM_ELEMS; i++) {
 		n = rand() % MAX_VAL;
+		if (avl_lookup(&tree, INT_TO_P(n))) continue;
+
 		avl_node_t *node = calloc(1, sizeof(*node));
 		avl_insert(&tree, node, INT_TO_P(n));
 		avl_debug(tree.root); printf("\n");
 		avl_display(tree.root, 0);
 		avl_check_invariant(tree.root);
-		printf("inserting %d\n", n);
+		printf("inserted %d\n", n);
 	}
 
 	return 0;
