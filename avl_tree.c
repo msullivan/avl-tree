@@ -83,6 +83,40 @@ static inline void set_right(avl_node_t *root, avl_node_t *child) {
 }
 // insert:
 
+avl_node_t *avl_node_repair(avl_node_t *root)
+{
+	int lh = TREE_HEIGHT(root->left);
+	int rh = TREE_HEIGHT(root->right);
+
+	// Needs repair.
+	if (lh > rh+1) {
+		avl_node_t *subtree = root->left;
+		assert(subtree);
+		int llh = TREE_HEIGHT(subtree->left);
+
+		if (llh == subtree->height-1) {
+			root = avl_rotate_right(root);
+		} else {
+			set_left(root, avl_rotate_left(subtree));
+			root = avl_rotate_right(root);
+		}
+	} else if (rh > lh+1) {
+		avl_node_t *subtree = root->right;
+		assert(subtree);
+		int rrh = TREE_HEIGHT(subtree->right);
+
+		if (rrh == subtree->height-1) {
+			root = avl_rotate_left(root);
+		} else {
+			set_right(root, avl_rotate_right(subtree));
+			root = avl_rotate_left(root);
+		}
+	}
+
+	return root;
+}
+
+
 /* FIXME: far too much duplication */
 avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp)
 {
@@ -104,73 +138,12 @@ avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp
 		/* aw, shit. figure out way to signal this */
 		return root;
 	} else if (n < 0) {
-		/* needs to go on the left */
-		subtree = root->left;
-
-		if (left_height <= right_height) {
-			/* simple case: just insert on the left */
-			set_left(root, avl_node_insert(subtree, data, cmp));
-		} else {
-			/* tricky case... */
-			assert(subtree);
-
-			/* store the heights of those subtrees */
-			sub_l_height = TREE_HEIGHT(subtree->left);
-			sub_r_height = TREE_HEIGHT(subtree->right);
-
-			set_left(root, avl_node_insert(subtree, data, cmp));
-
-			/* get the new heights of the subtrees */
-			sub_l_height_new = TREE_HEIGHT(subtree->left);
-			sub_r_height_new = TREE_HEIGHT(subtree->right);
-
-			if (sub_l_height == root->height - 2 &&
-			    sub_l_height_new == root->height - 1) {
-				/* rotate right */
-				root = avl_rotate_right(root);
-			} else if (sub_r_height == root->height - 2 &&
-			           sub_r_height_new == root->height - 1) {
-				/* double rotation */
-				set_left(root, avl_rotate_left(subtree));
-				root = avl_rotate_right(root);
-			}
-		}
+		set_left(root, avl_node_insert(root->left, data, cmp));
 	} else {
-		/* needs to go on the right */
-		subtree = root->right;
-
-		if (right_height <= left_height) {
-			/* simple case: just insert on the right */
-			set_right(root, avl_node_insert(subtree, data, cmp));
-		} else {
-			/* tricky case... */
-			/* XXX: FIXME: likely wrong */
-			assert(subtree);
-
-			/* store the heights of those subtrees */
-			sub_l_height = TREE_HEIGHT(subtree->left);
-			sub_r_height = TREE_HEIGHT(subtree->right);
-
-			set_right(root, avl_node_insert(subtree, data, cmp));
-
-			/* get the new heights of the subtrees */
-			sub_l_height_new = TREE_HEIGHT(subtree->left);
-			sub_r_height_new = TREE_HEIGHT(subtree->right);
-
-			if (sub_r_height == root->height - 2 &&
-			    sub_r_height_new == root->height - 1) {
-				/* rotate left */
-				root = avl_rotate_left(root);
-			} else if (sub_l_height == root->height - 2 &&
-			           sub_l_height_new == root->height - 1) {
-				/* double rotation */
-				set_right(root, avl_rotate_right(subtree));
-				root = avl_rotate_left(root);
-			}
-
-
-		}
+		set_right(root, avl_node_insert(root->right, data, cmp));
 	}
+
+	root = avl_node_repair(root);
 
 	avl_update_height(root);
 	return root;
