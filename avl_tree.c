@@ -73,14 +73,6 @@ avl_node_t *avl_lookup(avl_tree_t *tree, void *data)
 	return avl_node_lookup(tree->root, data, tree->lookup_cmp);
 }
 
-static inline void set_left(avl_node_t *root, avl_node_t *child) {
-	root->left = child;
-	if (child) child->parent = root;
-}
-static inline void set_right(avl_node_t *root, avl_node_t *child) {
-	root->right = child;
-	if (child) child->parent = root;
-}
 // insert:
 
 avl_node_t *avl_node_repair(avl_node_t *root)
@@ -188,6 +180,14 @@ static void avl_update_height(avl_node_t *node)
 		(left_height > right_height ? left_height : right_height) + 1;
 }
 
+static inline void set_left(avl_node_t *root, avl_node_t *child) {
+	root->left = child;
+	if (child) child->parent = root;
+}
+static inline void set_right(avl_node_t *root, avl_node_t *child) {
+	root->right = child;
+	if (child) child->parent = root;
+}
 
 static avl_node_t *avl_rotate_right(avl_node_t *node)
 {
