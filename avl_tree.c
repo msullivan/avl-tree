@@ -2,39 +2,13 @@
 #include <stdlib.h>
 #include <assert.h>
 
-typedef int (*avl_cmp_func)(void *, void *);
+#include "avl_tree.h"
 
-//typedef enum avl_balance_t { LEFT_HIGHER, RIGHT_HIGHER, SIDES_EQUAL }
-//	avl_balance_t;
-typedef enum avl_dir_t { AVL_LEFT, AVL_RIGHT }
-	avl_dir_t;
-
-typedef struct avl_node_t {
-	struct avl_node_t *parent;
-	union {
-		struct {
-			struct avl_node_t *left;
-			struct avl_node_t *right;
-		};
-		struct avl_node_t *links[2];
-	};
-	void *data;
-	int height;
-	int debug;
-} avl_node_t;
-
-typedef struct avl_tree_t {
-	avl_node_t dummy;
-
-	avl_cmp_func lookup_cmp;
-	avl_cmp_func insert_cmp;
-} avl_tree_t;
 
 
 #define TREE_HEIGHT(n) ((n) ? ((n)->height) : 0)
 
 static inline int is_root(avl_node_t *node) { return !node->parent; }
-static inline avl_node_t *get_root(avl_tree_t *root) { return root->dummy.right; }
 static inline void set_root(avl_tree_t *root, avl_node_t *child);
 static inline avl_dir_t get_parent_dir(avl_node_t *node);
 static inline void set_child(avl_node_t *root, avl_dir_t dir,
@@ -44,24 +18,24 @@ static inline void set_right(avl_node_t *root, avl_node_t *child);
 static avl_node_t *avl_rotate_right(avl_node_t *node);
 static avl_node_t *avl_rotate_left(avl_node_t *node);
 static void avl_update_height(avl_node_t *node);
-static void avl_check_invariant(avl_node_t *root);
+void avl_check_invariant(avl_node_t *root);
 
 avl_node_t *avl_node_next(avl_node_t *node);
 
-void avl_node_init(avl_node_t *node, void *data)
+void avl_node_init(avl_node_t *node)
 {
 	static int debug = 1;
 	node->parent = NULL;
 	node->left = NULL;
 	node->right = NULL;
-	node->data = data;
+	node->data = NULL;
 	node->height = 1;
 	node->debug = debug++;
 }
 int avl_init(avl_tree_t *tree,
              avl_cmp_func lookup_cmp, avl_cmp_func insert_cmp)
 {
-	avl_node_init(&tree->dummy, NULL);
+	avl_node_init(&tree->dummy);
 	tree->lookup_cmp = lookup_cmp;
 	tree->insert_cmp = insert_cmp;
 	return 0;
@@ -86,11 +60,11 @@ avl_node_t *avl_node_lookup(avl_node_t *root, void *data, avl_cmp_func cmp)
 
 avl_node_t *avl_lookup(avl_tree_t *tree, void *data)
 {
-	return avl_node_lookup(get_root(tree), data, tree->lookup_cmp);
+	return avl_node_lookup(avl_get_root(tree), data, tree->lookup_cmp);
 }
 
 // insert:
-avl_node_t *avl_node_repair(avl_node_t *root)
+static avl_node_t *avl_node_repair(avl_node_t *root)
 {
 	int lh = TREE_HEIGHT(root->left);
 	int rh = TREE_HEIGHT(root->right);
@@ -124,7 +98,8 @@ avl_node_t *avl_node_repair(avl_node_t *root)
 }
 
 
-avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp)
+avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data,
+                            avl_cmp_func cmp)
 {
 	if (!root) {
 		return data;
@@ -147,10 +122,11 @@ avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp
 	return root;
 }
 
-void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data)
-{
-	avl_node_init(node, data);
-	set_root(tree, avl_node_insert(get_root(tree), node, tree->insert_cmp));
+void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data) {
+	avl_node_init(node); // should we do this??
+	node->data = data;
+	set_root(tree,
+	         avl_node_insert(avl_get_root(tree), node, tree->insert_cmp));
 }
 
 // delete:
@@ -231,8 +207,7 @@ avl_node_t *avl_node_next(avl_node_t *node) {
 }
 
 
-static void avl_check_invariant(avl_node_t *root)
-{
+void avl_check_invariant(avl_node_t *root) {
 	int left_height, right_height;
 
 	if (!root)
@@ -313,103 +288,4 @@ static avl_node_t *avl_rotate_left(avl_node_t *node)
 	avl_update_height(replacement);
 
 	return replacement;
-}
-
-
-#define INT_TO_P(x) ((void *)(long)(x))
-#define P_TO_INT(p) ((int)(long)(p))
-
-void avl_debug(avl_node_t *root)
-{
-	int l, r;
-	if (!root)
-		return;
-
-	l = root->left ? root->left->debug : 0;
-	r = root->right ? root->right->debug : 0;
-
-	avl_debug(root->left);
-	printf("%d-%d-%d(%d,%d) ",
-	       root->debug, P_TO_INT(root->data), root->height, l, r);
-	avl_debug(root->right);
-}
-
-void avl_display(avl_node_t *root, int level)
-{
-	int c;
-	if (!root)
-		return;
-
-	avl_display(root->left, level+1);
-	for (c = 2*level; c; c--)
-		putchar(' ');
-//	printf("%02d\n", root->debug);
-	printf("%02d\n", P_TO_INT(root->data));
-
-	avl_display(root->right, level+1);
-}
-
-void avl_iterate(avl_node_t *root) {
-	for (avl_node_t *node = avl_node_first(root); node;
-		 node = avl_node_next(node)) {
-
-		printf("%d ", P_TO_INT(node->data));
-	}
-	printf("\n");
-}
-
-int test_print(void *p)
-{
-	printf("%d ", P_TO_INT(p));
-	return 0;
-}
-
-int test_cmp(void *p, void *q)
-{
-	return P_TO_INT(p) - P_TO_INT(q);
-}
-
-#define NUM_ELEMS 100
-#define NUM_DELS 10
-#define MAX_VAL 100
-
-void debug_crap(avl_tree_t *tree) {
-	avl_debug(get_root(tree)); printf("\n");
-	avl_display(get_root(tree), 0);
-	avl_check_invariant(get_root(tree));
-	avl_iterate(get_root(tree));
-}
-
-int main(void)
-{
-	int n, i;
-	avl_tree_t stree;
-	avl_tree_t *tree = &stree;
-	avl_init(tree, test_cmp, test_cmp);
-
-	for (i = 0; i < NUM_ELEMS; i++) {
-		n = rand() % MAX_VAL;
-		if (avl_lookup(tree, INT_TO_P(n))) continue;
-
-		avl_node_t *node = calloc(1, sizeof(*node));
-		printf("inserting %d\n", n);
-		avl_insert(tree, node, INT_TO_P(n));
-
-		debug_crap(tree);
-	}
-
-	for (i = 0; i < NUM_DELS; i++) {
-		n = rand() % MAX_VAL;
-		avl_node_t *node = avl_lookup(tree, INT_TO_P(n));
-		if (!node) continue;
-
-		printf("deleting %d\n", n);
-		avl_node_delete(node);
-
-
-		debug_crap(tree);
-	}
-
-
-	return 0;
 }
