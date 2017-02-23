@@ -16,10 +16,6 @@ static inline void set_child(avl_node_t *root, avl_dir_t dir,
 static inline void set_left(avl_node_t *root, avl_node_t *child);
 static inline void set_right(avl_node_t *root, avl_node_t *child);
 static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir);
-static void avl_update_height(avl_node_t *node);
-void avl_check_invariant(avl_node_t *root);
-
-avl_node_t *avl_node_next(avl_node_t *node);
 
 void avl_node_init(avl_node_t *node)
 {
@@ -104,7 +100,6 @@ avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data,
 
 	root = avl_node_repair(root);
 
-	avl_update_height(root);
 	return root;
 }
 
@@ -165,7 +160,6 @@ void avl_node_delete(avl_node_t *node) {
 			//printf("rotated at %d\n", tofix->debug);
 			set_child(parent, pdir, fixed);
 		}
-		avl_update_height(tofix);
 		tofix = parent;
 	}
 }
@@ -232,6 +226,7 @@ static inline void set_child(avl_node_t *root, avl_dir_t dir,
                              avl_node_t *child) {
 	root->links[dir] = child;
 	if (child) child->parent = root;
+	avl_update_height(root);
 }
 static inline avl_dir_t get_parent_dir(avl_node_t *node) {
 	avl_node_t *parent = node->parent;
@@ -256,9 +251,6 @@ static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir) {
 
 	set_child(node, odir, replacement->links[dir]);
 	set_child(replacement, dir, node);
-
-	avl_update_height(node);
-	avl_update_height(replacement);
 
 	return replacement;
 }
