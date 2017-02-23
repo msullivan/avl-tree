@@ -35,25 +35,41 @@ int avl_init(avl_tree_t *tree,
 }
 
 // lookup:
-avl_node_t *avl_node_lookup(avl_node_t *root, void *data, avl_cmp_func cmp)
+/* Do a lookup, but also compute where the node would be
+ * inserted if it *does't* exist in the tree. */
+avl_node_t *avl_core_lookup(avl_tree_t *tree,
+                            avl_cmp_func cmp,
+                            void *data,
+                            avl_node_t **parent_out,
+                            avl_dir_t *dir_out)
 {
-	while (root) {
-		int n = cmp(data, root->data);
+	avl_node_t *parent = &tree->dummy;
+	avl_dir_t dir = AVL_RIGHT;
+	avl_node_t *node = avl_get_root(tree);
+
+	while (node) {
+		int n = cmp(data, node->data);
+
 		if (n == 0) {
 			break;
 		} else if (n < 0) {
-			root = root->left;
+			dir = AVL_LEFT;
 		} else {
-			root = root->right;
+			dir = AVL_RIGHT;
 		}
+		parent = node;
+		node = node->links[dir];
 	}
 
-	return root;
+	if (parent_out) *parent_out = parent;
+	if (dir_out) *dir_out = dir;
+
+	return node;
 }
 
 avl_node_t *avl_lookup(avl_tree_t *tree, void *data)
 {
-	return avl_node_lookup(avl_get_root(tree), data, tree->lookup_cmp);
+	return avl_core_lookup(tree, tree->lookup_cmp, data, NULL, NULL);
 }
 
 // node repair, used by insert and delete
@@ -82,6 +98,8 @@ static avl_node_t *avl_node_repair(avl_node_t *root)
 }
 
 // insert:
+
+
 avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data,
                             avl_cmp_func cmp)
 {

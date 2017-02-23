@@ -54,7 +54,6 @@ void avl_check_tree(avl_tree_t *tree);
 
 
 //// SHOULD THESE BE IN THE PUBLIC INTERFACE??
-avl_node_t *avl_node_lookup(avl_node_t *root, void *data, avl_cmp_func cmp);
 avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data,
                             avl_cmp_func cmp);
 void avl_node_delete(avl_node_t *node);
