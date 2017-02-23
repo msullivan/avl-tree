@@ -10,13 +10,6 @@ static inline avl_dir_t flip_dir(avl_dir_t dir) { return !dir; }
 
 static inline int is_dummy(avl_node_t *node) { return !node->parent; }
 static inline int is_root(avl_node_t *node) { return is_dummy(node->parent); }
-static inline avl_dir_t get_parent_dir(avl_node_t *node);
-static inline void set_child(avl_node_t *root, avl_dir_t dir,
-                             avl_node_t *child);
-static inline void set_left(avl_node_t *root, avl_node_t *child);
-static inline void set_right(avl_node_t *root, avl_node_t *child);
-static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir);
-static void avl_update_height(avl_node_t *node);
 
 static inline int max(int x, int y) { return x > y ? x : y; }
 
@@ -35,6 +28,38 @@ int avl_init(avl_tree_t *tree,
 	tree->lookup_cmp = lookup_cmp;
 	tree->insert_cmp = insert_cmp;
 	return 0;
+}
+
+// core manipulation/query routines
+static void avl_update_height(avl_node_t *node) {
+	node->height = max(TREE_HEIGHT(node->left), TREE_HEIGHT(node->right)) + 1;
+}
+
+static inline void set_child(avl_node_t *root, avl_dir_t dir,
+                             avl_node_t *child) {
+	root->links[dir] = child;
+	if (child) child->parent = root;
+	avl_update_height(root);
+}
+static inline avl_dir_t get_parent_dir(avl_node_t *node) {
+	avl_node_t *parent = node->parent;
+	if (parent->left == node) return AVL_LEFT;
+	assert(parent->right == node);
+	return AVL_RIGHT;
+}
+
+// rotates around node in direction 'dir'
+static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir) {
+	avl_dir_t odir = flip_dir(dir);
+
+	avl_node_t *replacement = node->links[odir];
+	if (!replacement)
+		return node;
+
+	set_child(node, odir, replacement->links[dir]);
+	set_child(replacement, dir, node);
+
+	return replacement;
 }
 
 // lookup:
@@ -134,10 +159,10 @@ static void swap_nodes(avl_node_t *node1, avl_node_t *node2) {
 	// Swapping tree nodes is a lot easier when you don't care about
 	// what object is in use and just can swap data pointers. Oh well.
 	avl_node_t temp = *node1;
-	set_left(node1, node2->left);
-	set_right(node1, node2->right);
-	set_left(node2, temp.left);
-	set_right(node2, temp.right);
+	set_child(node1, AVL_LEFT, node2->left);
+	set_child(node1, AVL_RIGHT, node2->right);
+	set_child(node2, AVL_LEFT, temp.left);
+	set_child(node2, AVL_RIGHT, temp.right);
 
 	avl_dir_t node1_pdir = get_parent_dir(node1);
 	avl_dir_t node2_pdir = get_parent_dir(node2);
@@ -240,42 +265,4 @@ void avl_check_tree(avl_tree_t *tree) {
 	avl_node_t *root = avl_get_root(tree);
 	assert(!root || root->parent == &tree->dummy);
 	avl_check_node(root);
-}
-
-static void avl_update_height(avl_node_t *node)
-{
-	node->height = max(TREE_HEIGHT(node->left), TREE_HEIGHT(node->right)) + 1;
-}
-
-static inline void set_child(avl_node_t *root, avl_dir_t dir,
-                             avl_node_t *child) {
-	root->links[dir] = child;
-	if (child) child->parent = root;
-	avl_update_height(root);
-}
-static inline avl_dir_t get_parent_dir(avl_node_t *node) {
-	avl_node_t *parent = node->parent;
-	if (parent->left == node) return AVL_LEFT;
-	assert(parent->right == node);
-	return AVL_RIGHT;
-}
-static inline void set_left(avl_node_t *root, avl_node_t *child) {
-	set_child(root, AVL_LEFT, child);
-}
-static inline void set_right(avl_node_t *root, avl_node_t *child) {
-	set_child(root, AVL_RIGHT, child);
-}
-
-// rotates around node in direction 'dir'
-static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir) {
-	avl_dir_t odir = flip_dir(dir);
-
-	avl_node_t *replacement = node->links[odir];
-	if (!replacement)
-		return node;
-
-	set_child(node, odir, replacement->links[dir]);
-	set_child(replacement, dir, node);
-
-	return replacement;
 }
