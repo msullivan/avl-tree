@@ -4,9 +4,9 @@
 
 #include "avl_tree.h"
 
-
-
 #define TREE_HEIGHT(n) ((n) ? ((n)->height) : 0)
+
+static inline avl_dir_t flip_dir(avl_dir_t dir) { return !dir; }
 
 static inline int is_root(avl_node_t *node) { return !node->parent; }
 static inline void set_root(avl_tree_t *root, avl_node_t *child);
@@ -15,6 +15,7 @@ static inline void set_child(avl_node_t *root, avl_dir_t dir,
                              avl_node_t *child);
 static inline void set_left(avl_node_t *root, avl_node_t *child);
 static inline void set_right(avl_node_t *root, avl_node_t *child);
+static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir);
 static avl_node_t *avl_rotate_right(avl_node_t *node);
 static avl_node_t *avl_rotate_left(avl_node_t *node);
 static void avl_update_height(avl_node_t *node);
@@ -259,32 +260,26 @@ static inline void set_right(avl_node_t *root, avl_node_t *child) {
 	set_child(root, AVL_RIGHT, child);
 }
 
-static avl_node_t *avl_rotate_right(avl_node_t *node)
-{
-	avl_node_t *replacement = node->left;
+// rotates around node in direction 'dir'
+static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir) {
+	avl_dir_t odir = flip_dir(dir);
+
+	avl_node_t *replacement = node->links[odir];
 	if (!replacement)
 		return node;
 
-	set_left(node, replacement->right);
-	set_right(replacement, node);
+	set_child(node, odir, replacement->links[dir]);
+	set_child(replacement, dir, node);
 
-	avl_update_height(replacement->right);
+	avl_update_height(node);
 	avl_update_height(replacement);
 
 	return replacement;
 }
 
-static avl_node_t *avl_rotate_left(avl_node_t *node)
-{
-	avl_node_t *replacement = node->right;
-	if (!replacement)
-		return node;
-
-	set_right(node, replacement->left);
-	set_left(replacement, node);
-
-	avl_update_height(replacement->left);
-	avl_update_height(replacement);
-
-	return replacement;
+static avl_node_t *avl_rotate_right(avl_node_t *node) {
+	return avl_rotate(node, AVL_RIGHT);
+}
+static avl_node_t *avl_rotate_left(avl_node_t *node) {
+	return avl_rotate(node, AVL_LEFT);
 }
