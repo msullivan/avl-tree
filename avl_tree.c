@@ -8,14 +8,17 @@
 
 static inline avl_dir_t flip_dir(avl_dir_t dir) { return !dir; }
 
-static inline int is_root(avl_node_t *node) { return !node->parent; }
-static inline void set_root(avl_tree_t *root, avl_node_t *child);
+static inline int is_dummy(avl_node_t *node) { return !node->parent; }
+static inline int is_root(avl_node_t *node) { return is_dummy(node->parent); }
 static inline avl_dir_t get_parent_dir(avl_node_t *node);
 static inline void set_child(avl_node_t *root, avl_dir_t dir,
                              avl_node_t *child);
 static inline void set_left(avl_node_t *root, avl_node_t *child);
 static inline void set_right(avl_node_t *root, avl_node_t *child);
 static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir);
+static void avl_update_height(avl_node_t *node);
+
+static inline int max(int x, int y) { return x > y ? x : y; }
 
 void avl_node_init(avl_node_t *node)
 {
@@ -77,10 +80,15 @@ static int balance_factor(avl_node_t *root) {
 	return TREE_HEIGHT(root->left) - TREE_HEIGHT(root->right);
 }
 
-static avl_node_t *avl_node_repair(avl_node_t *root)
+static void avl_node_repair(avl_node_t *root)
 {
+	avl_update_height(root);
 	int bal = balance_factor(root);
-	if (abs(bal) <= 1) return root;
+	if (abs(bal) <= 1) return;
+
+	// Grab what we need to update parent of the rotation
+	avl_dir_t pdir = get_parent_dir(root);
+	avl_node_t *parent = root->parent;
 
 	// We need to do repair. Which side is too tall?
 	avl_dir_t dir = bal >= 1 ? AVL_LEFT : AVL_RIGHT;
@@ -94,38 +102,31 @@ static avl_node_t *avl_node_repair(avl_node_t *root)
 	if (TREE_HEIGHT(subtree->links[dir])+1 != subtree->height) {
 		set_child(root, dir, avl_rotate(subtree, dir));
 	}
-	return avl_rotate(root, flip_dir(dir));
+	set_child(parent, pdir, avl_rotate(root, flip_dir(dir)));
+}
+
+/* Update the structure back up to the root */
+static void avl_chain_repair(avl_node_t *node) {
+	while (!is_dummy(node)) {
+		avl_node_t *parent = node->parent;
+		avl_node_repair(node);
+		node = parent;
+	}
 }
 
 // insert:
-
-
-avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data,
-                            avl_cmp_func cmp)
-{
-	if (!root) return data;
-
-	int n = cmp(data->data, root->data);
-
-	if (n == 0) {
-		/* aw, shit. figure out way to signal this */
-		return root;
-	} else if (n < 0) {
-		set_left(root, avl_node_insert(root->left, data, cmp));
-	} else {
-		set_right(root, avl_node_insert(root->right, data, cmp));
-	}
-
-	root = avl_node_repair(root);
-
-	return root;
-}
-
 void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data) {
 	avl_node_init(node); // should we do this??
 	node->data = data;
-	set_root(tree,
-	         avl_node_insert(avl_get_root(tree), node, tree->insert_cmp));
+
+	avl_node_t *parent;
+	avl_dir_t dir;
+	avl_node_t *existing = avl_core_lookup(tree, tree->insert_cmp, data,
+	                                       &parent, &dir);
+	assert(!existing); // XXX: do something less awful?
+
+	set_child(parent, dir, node);
+	avl_chain_repair(parent);
 }
 
 // delete:
@@ -150,7 +151,7 @@ static void replace_node(avl_node_t *old_node, avl_node_t *new_node) {
 	set_child(old_node->parent, old_pdir, new_node);
 }
 
-void avl_node_delete(avl_node_t *node) {
+void avl_delete(avl_tree_t *tree, avl_node_t *node) {
 	avl_node_t *replacement;
 	for (;;) {
 		if (!node->left) {
@@ -168,18 +169,7 @@ void avl_node_delete(avl_node_t *node) {
 
 	avl_node_t *tofix = node->parent;
 	replace_node(node, replacement);
-
-	/* now we need to climb the tree repairing nodes */
-	while (!is_root(tofix)) {
-		avl_dir_t pdir = get_parent_dir(tofix);
-		avl_node_t *parent = tofix->parent;
-		avl_node_t *fixed = avl_node_repair(tofix);
-		if (fixed != tofix) {
-			//printf("rotated at %d\n", tofix->debug);
-			set_child(parent, pdir, fixed);
-		}
-		tofix = parent;
-	}
+	avl_chain_repair(tofix);
 }
 
 //
@@ -203,29 +193,29 @@ avl_node_t *avl_node_next(avl_node_t *node) {
 	return node->parent;
 }
 
-
-void avl_check_node(avl_node_t *root) {
+int avl_check_node(avl_node_t *node) {
 	int left_height, right_height;
 
-	if (!root)
-		return;
+	if (!node) return 0;
 
-	assert(!root->left || root->left->parent == root);
-	assert(!root->right || root->right->parent == root);
+	assert(!node->left || node->left->parent == node);
+	assert(!node->right || node->right->parent == node);
 
-	left_height = TREE_HEIGHT(root->left);
-	right_height = TREE_HEIGHT(root->right);
+	left_height = TREE_HEIGHT(node->left);
+	right_height = TREE_HEIGHT(node->right);
 
 	if (abs(left_height - right_height) > 1) {
 		fprintf(stderr,
 		        "invariant violated at %p(%p/%zd)! heights: left=%d, right=%d\n",
-		        root, root->data, (size_t)root->data,
+		        node, node->data, (size_t)node->data,
 		        left_height, right_height);
 		abort();
 	}
 
-	avl_check_node(root->left);
-	avl_check_node(root->right);
+	int real_height = max(avl_check_node(node->left),
+	                      avl_check_node(node->right)) + 1;
+	assert(real_height == node->height);
+	return real_height;
 }
 void avl_check_tree(avl_tree_t *tree) {
 	avl_node_t *root = avl_get_root(tree);
@@ -235,16 +225,9 @@ void avl_check_tree(avl_tree_t *tree) {
 
 static void avl_update_height(avl_node_t *node)
 {
-	int left_height = TREE_HEIGHT(node->left);
-	int right_height = TREE_HEIGHT(node->right);
-
-	node->height =
-		(left_height > right_height ? left_height : right_height) + 1;
+	node->height = max(TREE_HEIGHT(node->left), TREE_HEIGHT(node->right)) + 1;
 }
 
-static inline void set_root(avl_tree_t *tree, avl_node_t *child) {
-	set_right(&tree->dummy, child);
-}
 static inline void set_child(avl_node_t *root, avl_dir_t dir,
                              avl_node_t *child) {
 	root->links[dir] = child;

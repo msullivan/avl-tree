@@ -99,7 +99,7 @@ int main(void)
 		if (!node) continue;
 
 		printf("deleting %d\n", n);
-		avl_node_delete(node);
+		avl_delete(tree, node);
 
 		debug_crap(tree);
 		i++;

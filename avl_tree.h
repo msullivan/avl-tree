@@ -36,6 +36,7 @@ int avl_init(avl_tree_t *tree,
              avl_cmp_func lookup_cmp, avl_cmp_func insert_cmp);
 avl_node_t *avl_lookup(avl_tree_t *tree, void *data);
 void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data);
+void avl_delete(avl_tree_t *tree, avl_node_t *node);
 
 // node-level stuff that definitely needs exposed
 avl_node_t *avl_node_first(avl_node_t *node);
@@ -47,16 +48,7 @@ static inline avl_node_t *avl_first(avl_tree_t *tree) {
 	return avl_node_first(avl_get_root(tree));
 }
 
-void avl_check_node(avl_node_t *root);
+int avl_check_node(avl_node_t *root);
 void avl_check_tree(avl_tree_t *tree);
-
-
-
-
-//// SHOULD THESE BE IN THE PUBLIC INTERFACE??
-avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data,
-                            avl_cmp_func cmp);
-void avl_node_delete(avl_node_t *node);
-
 
 #endif
