@@ -6,11 +6,19 @@ typedef int (*avl_cmp_func)(void *, void *);
 
 typedef enum avl_balance_t { LEFT_HIGHER, RIGHT_HIGHER, SIDES_EQUAL }
 	avl_balance_t;
+typedef enum avl_dir_t { LEFT, RIGHT }
+	avl_dir_t;
+
 
 typedef struct avl_node_t {
 	struct avl_node_t *parent;
-	struct avl_node_t *left;
-	struct avl_node_t *right;
+	union {
+		struct {
+			struct avl_node_t *left;
+			struct avl_node_t *right;
+		};
+		struct avl_node_t *links[2];
+	};
 	void *data;
 	/*avl_balance_t balance;*/
 	int height;
@@ -27,10 +35,11 @@ typedef struct avl_tree_t {
 
 #define TREE_HEIGHT(n) ((n) ? ((n)->height) : 0)
 
+static inline int is_root(avl_node_t *node) { return !node->parent; }
 static inline avl_node_t *get_root(avl_tree_t *root) { return root->dummy.right; }
 static inline void set_root(avl_tree_t *root, avl_node_t *child);
-static inline avl_node_t **get_parent_link(avl_node_t *node);
-static inline void set_child(avl_node_t *root, avl_node_t **ptr,
+static inline avl_dir_t get_parent_dir(avl_node_t *node);
+static inline void set_child(avl_node_t *root, avl_dir_t dir,
                              avl_node_t *child);
 static inline void set_left(avl_node_t *root, avl_node_t *child);
 static inline void set_right(avl_node_t *root, avl_node_t *child);
@@ -160,24 +169,38 @@ void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data)
 	set_left(node2, temp.left);
 	set_right(node2, temp.right);
 
-	avl_node_t **node1_plink = get_parent_link(node1);
-	avl_node_t **node2_plink = get_parent_link(node2);
+	avl_dir_t node1_pdir = get_parent_dir(node1);
+	avl_dir_t node2_pdir = get_parent_dir(node2);
 
-	if (node2_plink) {
-		set_child(node2->parent, node2_plink, node1);
-	}
-	if (temp.parent) {
-		set_child(temp.parent, node1_plink, node2);
-	}
+	set_child(node2->parent, node2_pdir, node1);
+	set_child(temp.parent, node1_pdir, node2);
 }
-/*
+// replaces *in the parent*
+/*static*/ void replace_node(avl_node_t *old_node, avl_node_t *new_node) {
+	avl_dir_t old_pdir = get_parent_dir(old_node);
+	set_child(old_node->parent, old_pdir, new_node);
+}
+#if 0
 avl_node_t *avl_node_delete(avl_node_t *root, void *data, avl_cmp_func cmp) {
 	avl_node_t *node = avl_node_lookup(root, data, cmp);
+	if (!node) return NULL;
+
+	if (!node->left) {
+		replace_node(node, node->right);
+	} else if (!node->right) {
+		replace_node(node, node->left);
+	} else {
+		// This is the hard case!
+		avl_node_t *next = avl_node_next(node);
+		swap_nodes(node, next);
+		avl_node_delete(next->right, data, cmp);
+
+
 
 
 
 }
-*/
+#endif
 
 //
 avl_node_t *avl_node_first(avl_node_t *node)
@@ -238,23 +261,22 @@ static void avl_update_height(avl_node_t *node)
 static inline void set_root(avl_tree_t *tree, avl_node_t *child) {
 	set_right(&tree->dummy, child);
 }
-static inline void set_child(avl_node_t *root, avl_node_t **ptr,
+static inline void set_child(avl_node_t *root, avl_dir_t dir,
                              avl_node_t *child) {
-	*ptr = child;
+	root->links[dir] = child;
 	if (child) child->parent = root;
 }
-static inline avl_node_t **get_parent_link(avl_node_t *node) {
+static inline avl_dir_t get_parent_dir(avl_node_t *node) {
 	avl_node_t *parent = node->parent;
-	if (!parent) return NULL;
-	if (parent->left == node) return &parent->left;
+	if (parent->left == node) return LEFT;
 	assert(parent->right == node);
-	return &parent->right;
+	return RIGHT;
 }
 static inline void set_left(avl_node_t *root, avl_node_t *child) {
-	set_child(root, &root->left, child);
+	set_child(root, LEFT, child);
 }
 static inline void set_right(avl_node_t *root, avl_node_t *child) {
-	set_child(root, &root->right, child);
+	set_child(root, RIGHT, child);
 }
 
 static avl_node_t *avl_rotate_right(avl_node_t *node)
@@ -358,7 +380,7 @@ int main(void)
 		avl_debug(get_root(&tree)); printf("\n");
 		avl_display(get_root(&tree), 0);
 		avl_check_invariant(get_root(&tree));
-		avl_iterate(&tree);
+		avl_iterate(get_root(&tree));
 		printf("inserted %d\n", n);
 	}
 
