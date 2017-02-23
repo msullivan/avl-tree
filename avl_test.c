@@ -70,6 +70,11 @@ void debug_crap(avl_tree_t *tree) {
 	avl_iterate(root);
 }
 
+int gen() {
+//	static int num = 0; return ++num;
+	return rand();
+}
+
 int main(void)
 {
 	int n, i;
@@ -78,7 +83,7 @@ int main(void)
 	avl_init(tree, test_cmp, test_cmp);
 
 	for (i = 0; i < NUM_ELEMS; i++) {
-		n = rand() % MAX_VAL;
+		n = gen() % MAX_VAL;
 		if (avl_lookup(tree, INT_TO_P(n))) continue;
 
 		avl_node_t *node = calloc(1, sizeof(*node));
@@ -89,7 +94,7 @@ int main(void)
 	}
 
 	for (i = 0; i < NUM_DELS; i++) {
-		n = rand() % MAX_VAL;
+		n = gen() % MAX_VAL;
 		avl_node_t *node = avl_lookup(tree, INT_TO_P(n));
 		if (!node) continue;
 
