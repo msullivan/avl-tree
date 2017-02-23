@@ -4,11 +4,10 @@
 
 typedef int (*avl_cmp_func)(void *, void *);
 
-typedef enum avl_balance_t { LEFT_HIGHER, RIGHT_HIGHER, SIDES_EQUAL }
-	avl_balance_t;
-typedef enum avl_dir_t { LEFT, RIGHT }
+//typedef enum avl_balance_t { LEFT_HIGHER, RIGHT_HIGHER, SIDES_EQUAL }
+//	avl_balance_t;
+typedef enum avl_dir_t { AVL_LEFT, AVL_RIGHT }
 	avl_dir_t;
-
 
 typedef struct avl_node_t {
 	struct avl_node_t *parent;
@@ -20,7 +19,6 @@ typedef struct avl_node_t {
 		struct avl_node_t *links[2];
 	};
 	void *data;
-	/*avl_balance_t balance;*/
 	int height;
 	int debug;
 } avl_node_t;
@@ -47,6 +45,8 @@ static avl_node_t *avl_rotate_right(avl_node_t *node);
 static avl_node_t *avl_rotate_left(avl_node_t *node);
 static void avl_update_height(avl_node_t *node);
 static void avl_check_invariant(avl_node_t *root);
+
+avl_node_t *avl_node_next(avl_node_t *node);
 
 void avl_node_init(avl_node_t *node, void *data)
 {
@@ -126,19 +126,11 @@ avl_node_t *avl_node_repair(avl_node_t *root)
 
 avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data, avl_cmp_func cmp)
 {
-	int left_height, right_height;
-	int sub_l_height, sub_r_height;
-	int sub_l_height_new, sub_r_height_new;
-	int n;
-	avl_node_t *subtree;
-
 	if (!root) {
 		return data;
 	}
 
-	left_height = TREE_HEIGHT(root->left);
-	right_height = TREE_HEIGHT(root->right);
-	n = cmp(data->data, root->data);
+	int n = cmp(data->data, root->data);
 
 	if (n == 0) {
 		/* aw, shit. figure out way to signal this */
@@ -162,7 +154,7 @@ void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data)
 }
 
 // delete:
-/*static*/ void swap_nodes(avl_node_t *node1, avl_node_t *node2) {
+static void swap_nodes(avl_node_t *node1, avl_node_t *node2) {
 	avl_node_t temp = *node1;
 	set_left(node1, node2->left);
 	set_right(node1, node2->right);
@@ -176,35 +168,49 @@ void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data)
 	set_child(temp.parent, node1_pdir, node2);
 }
 // replaces *in the parent*
-/*static*/ void replace_node(avl_node_t *old_node, avl_node_t *new_node) {
+static void replace_node(avl_node_t *old_node, avl_node_t *new_node) {
 	avl_dir_t old_pdir = get_parent_dir(old_node);
 	set_child(old_node->parent, old_pdir, new_node);
 }
-#if 0
-avl_node_t *avl_node_delete(avl_node_t *root, void *data, avl_cmp_func cmp) {
-	avl_node_t *node = avl_node_lookup(root, data, cmp);
-	if (!node) return NULL;
 
-	if (!node->left) {
-		replace_node(node, node->right);
-	} else if (!node->right) {
-		replace_node(node, node->left);
-	} else {
-		// This is the hard case!
-		avl_node_t *next = avl_node_next(node);
-		swap_nodes(node, next);
-		avl_node_delete(next->right, data, cmp);
+void avl_node_delete(avl_node_t *node) {
+	avl_node_t *replacement;
+	for (;;) {
+		if (!node->left) {
+			replacement = node->right;
+			break;
+		} else if (!node->right) {
+			replacement = node->left;
+			break;
+		} else {
+			// This is the hard case!
+			avl_node_t *next = avl_node_next(node);
+			swap_nodes(node, next);
+		}
+	}
 
+	avl_node_t *tofix = node->parent;
+	replace_node(node, replacement);
 
-
-
-
+	/* now we need to climb the tree repairing nodes */
+	while (!is_root(tofix)) {
+		avl_dir_t pdir = get_parent_dir(tofix);
+		avl_node_t *parent = tofix->parent;
+		avl_node_t *fixed = avl_node_repair(tofix);
+		if (fixed != tofix) {
+			//printf("rotated at %d\n", tofix->debug);
+			set_child(parent, pdir, fixed);
+		}
+		avl_update_height(tofix);
+		tofix = parent;
+	}
 }
-#endif
+
+
+
 
 //
-avl_node_t *avl_node_first(avl_node_t *node)
-{
+avl_node_t *avl_node_first(avl_node_t *node) {
 	if (!node) return node;
 	while (node->left) {
 		node = node->left;
@@ -212,8 +218,7 @@ avl_node_t *avl_node_first(avl_node_t *node)
 	return node;
 }
 
-avl_node_t *avl_node_next(avl_node_t *node)
-{
+avl_node_t *avl_node_next(avl_node_t *node) {
 	if (!node) return NULL;
 	if (node->right) {
 		return avl_node_first(node->right);
@@ -240,8 +245,9 @@ static void avl_check_invariant(avl_node_t *root)
 	right_height = TREE_HEIGHT(root->right);
 
 	if (abs(left_height - right_height) > 1) {
-		printf("invariant violated at %d! %d, %d\n", root->debug,
-				left_height, right_height);
+		printf("invariant violated at %d(%d)! %d, %d\n",
+		       root->debug, (int)(size_t)root->data,
+		       left_height, right_height);
 		abort();
 	}
 
@@ -268,15 +274,15 @@ static inline void set_child(avl_node_t *root, avl_dir_t dir,
 }
 static inline avl_dir_t get_parent_dir(avl_node_t *node) {
 	avl_node_t *parent = node->parent;
-	if (parent->left == node) return LEFT;
+	if (parent->left == node) return AVL_LEFT;
 	assert(parent->right == node);
-	return RIGHT;
+	return AVL_RIGHT;
 }
 static inline void set_left(avl_node_t *root, avl_node_t *child) {
-	set_child(root, LEFT, child);
+	set_child(root, AVL_LEFT, child);
 }
 static inline void set_right(avl_node_t *root, avl_node_t *child) {
-	set_child(root, RIGHT, child);
+	set_child(root, AVL_RIGHT, child);
 }
 
 static avl_node_t *avl_rotate_right(avl_node_t *node)
@@ -337,7 +343,8 @@ void avl_display(avl_node_t *root, int level)
 	avl_display(root->left, level+1);
 	for (c = 2*level; c; c--)
 		putchar(' ');
-	printf("%02d\n", root->debug);
+//	printf("%02d\n", root->debug);
+	printf("%02d\n", P_TO_INT(root->data));
 
 	avl_display(root->right, level+1);
 }
@@ -363,26 +370,46 @@ int test_cmp(void *p, void *q)
 }
 
 #define NUM_ELEMS 100
+#define NUM_DELS 10
 #define MAX_VAL 100
+
+void debug_crap(avl_tree_t *tree) {
+	avl_debug(get_root(tree)); printf("\n");
+	avl_display(get_root(tree), 0);
+	avl_check_invariant(get_root(tree));
+	avl_iterate(get_root(tree));
+}
 
 int main(void)
 {
 	int n, i;
-	avl_tree_t tree;
-	avl_init(&tree, test_cmp, test_cmp);
+	avl_tree_t stree;
+	avl_tree_t *tree = &stree;
+	avl_init(tree, test_cmp, test_cmp);
 
 	for (i = 0; i < NUM_ELEMS; i++) {
 		n = rand() % MAX_VAL;
-		if (avl_lookup(&tree, INT_TO_P(n))) continue;
+		if (avl_lookup(tree, INT_TO_P(n))) continue;
 
 		avl_node_t *node = calloc(1, sizeof(*node));
-		avl_insert(&tree, node, INT_TO_P(n));
-		avl_debug(get_root(&tree)); printf("\n");
-		avl_display(get_root(&tree), 0);
-		avl_check_invariant(get_root(&tree));
-		avl_iterate(get_root(&tree));
-		printf("inserted %d\n", n);
+		printf("inserting %d\n", n);
+		avl_insert(tree, node, INT_TO_P(n));
+
+		debug_crap(tree);
 	}
+
+	for (i = 0; i < NUM_DELS; i++) {
+		n = rand() % MAX_VAL;
+		avl_node_t *node = avl_lookup(tree, INT_TO_P(n));
+		if (!node) continue;
+
+		printf("deleting %d\n", n);
+		avl_node_delete(node);
+
+
+		debug_crap(tree);
+	}
+
 
 	return 0;
 }
