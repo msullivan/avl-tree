@@ -24,13 +24,11 @@ avl_node_t *avl_node_next(avl_node_t *node);
 
 void avl_node_init(avl_node_t *node)
 {
-	static int debug = 1;
 	node->parent = NULL;
 	node->left = NULL;
 	node->right = NULL;
 	node->data = NULL;
 	node->height = 1;
-	node->debug = debug++;
 }
 int avl_init(avl_tree_t *tree,
              avl_cmp_func lookup_cmp, avl_cmp_func insert_cmp)
@@ -220,9 +218,10 @@ void avl_check_invariant(avl_node_t *root) {
 	right_height = TREE_HEIGHT(root->right);
 
 	if (abs(left_height - right_height) > 1) {
-		printf("invariant violated at %d(%d)! %d, %d\n",
-		       root->debug, (int)(size_t)root->data,
-		       left_height, right_height);
+		fprintf(stderr,
+		        "invariant violated at %p(%p/%zd)! heights: left=%d, right=%d\n",
+		        root, root->data, (size_t)root->data,
+		        left_height, right_height);
 		abort();
 	}
 

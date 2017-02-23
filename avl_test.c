@@ -14,12 +14,12 @@ void avl_debug(avl_node_t *root)
 	if (!root)
 		return;
 
-	l = root->left ? root->left->debug : 0;
-	r = root->right ? root->right->debug : 0;
+	l = root->left ? P_TO_INT(root->left->data) : 0;
+	r = root->right ? P_TO_INT(root->right->data) : 0;
 
 	avl_debug(root->left);
-	printf("%d-%d-%d(%d,%d) ",
-	       root->debug, P_TO_INT(root->data), root->height, l, r);
+	printf("%p-%d-%d(%d,%d) ",
+	       root, P_TO_INT(root->data), root->height, l, r);
 	avl_debug(root->right);
 }
 

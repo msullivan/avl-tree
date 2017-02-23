@@ -19,7 +19,6 @@ typedef struct avl_node_t {
 	};
 	void *data;
 	int height;
-	int debug;
 } avl_node_t;
 
 typedef struct avl_tree_t {
