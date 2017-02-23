@@ -162,7 +162,7 @@ void avl_delete(avl_tree_t *tree, avl_node_t *node) {
 			break;
 		} else {
 			/* this is the hard case! */
-			avl_node_t *next = avl_node_next(node);
+			avl_node_t *next = avl_next(node);
 			swap_nodes(node, next);
 		}
 	}
@@ -172,27 +172,46 @@ void avl_delete(avl_tree_t *tree, avl_node_t *node) {
 	avl_chain_repair(tofix);
 }
 
-//
-avl_node_t *avl_node_first(avl_node_t *node) {
+// tree traversal
+/* find the leftmost or rightmost node, depending on dir */
+avl_node_t *avl_node_end(avl_node_t *node, avl_dir_t dir) {
 	if (!node) return node;
-	while (node->left) {
-		node = node->left;
+	while (node->links[dir]) {
+		node = node->links[dir];
 	}
 	return node;
 }
-
-avl_node_t *avl_node_next(avl_node_t *node) {
+avl_node_t *avl_node_first(avl_node_t *node) {
+	return avl_node_end(node, AVL_LEFT);
+}
+avl_node_t *avl_node_last(avl_node_t *node) {
+	return avl_node_end(node, AVL_RIGHT);
+}
+/* step left or right in the tree */
+avl_node_t *avl_step(avl_node_t *node, avl_dir_t dir) {
+	avl_dir_t odir = flip_dir(dir);
 	if (!node) return NULL;
-	if (node->right) {
-		return avl_node_first(node->right);
+	if (node->links[dir]) {
+		return avl_node_end(node->links[dir], odir);
 	}
-	while (node->parent && node == node->parent->right) {
+	// there is some annoying fiddliness/redundancy in the stopping
+	// condition, since it actually differs between left and right
+	// traversal.
+	while (node->parent && node == node->parent->links[dir]) {
 		node = node->parent;
 	}
-	assert(!node->parent || node == node->parent->left);
+	if (!node->parent || is_dummy(node->parent)) return NULL;
+	assert(node == node->parent->links[odir]);
 	return node->parent;
 }
+avl_node_t *avl_next(avl_node_t *node) {
+	return avl_step(node, AVL_RIGHT);
+}
+avl_node_t *avl_prev(avl_node_t *node) {
+	return avl_step(node, AVL_LEFT);
+}
 
+// tree consistency checkers
 int avl_check_node(avl_node_t *node) {
 	int left_height, right_height;
 
