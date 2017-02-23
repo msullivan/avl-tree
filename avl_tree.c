@@ -16,8 +16,6 @@ static inline void set_child(avl_node_t *root, avl_dir_t dir,
 static inline void set_left(avl_node_t *root, avl_node_t *child);
 static inline void set_right(avl_node_t *root, avl_node_t *child);
 static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir);
-static avl_node_t *avl_rotate_right(avl_node_t *node);
-static avl_node_t *avl_rotate_left(avl_node_t *node);
 static void avl_update_height(avl_node_t *node);
 void avl_check_invariant(avl_node_t *root);
 
@@ -62,47 +60,36 @@ avl_node_t *avl_lookup(avl_tree_t *tree, void *data)
 	return avl_node_lookup(avl_get_root(tree), data, tree->lookup_cmp);
 }
 
-// insert:
-static avl_node_t *avl_node_repair(avl_node_t *root)
-{
-	int lh = TREE_HEIGHT(root->left);
-	int rh = TREE_HEIGHT(root->right);
-
-	// Needs repair.
-	if (lh > rh+1) {
-		avl_node_t *subtree = root->left;
-		assert(subtree);
-		int llh = TREE_HEIGHT(subtree->left);
-
-		if (llh == subtree->height-1) {
-			root = avl_rotate_right(root);
-		} else {
-			set_left(root, avl_rotate_left(subtree));
-			root = avl_rotate_right(root);
-		}
-	} else if (rh > lh+1) {
-		avl_node_t *subtree = root->right;
-		assert(subtree);
-		int rrh = TREE_HEIGHT(subtree->right);
-
-		if (rrh == subtree->height-1) {
-			root = avl_rotate_left(root);
-		} else {
-			set_right(root, avl_rotate_right(subtree));
-			root = avl_rotate_left(root);
-		}
-	}
-
-	return root;
+// node repair, used by insert and delete
+static int balance_factor(avl_node_t *root) {
+	return TREE_HEIGHT(root->left) - TREE_HEIGHT(root->right);
 }
 
+static avl_node_t *avl_node_repair(avl_node_t *root)
+{
+	int bal = balance_factor(root);
+	if (abs(bal) <= 1) return root;
 
+	// We need to do repair. Which side is too tall?
+	avl_dir_t dir = bal >= 1 ? AVL_LEFT : AVL_RIGHT;
+
+	// Needs repair.
+	avl_node_t *subtree = root->links[dir];
+	// At most one grandchild subtree can be too tall.
+	// If it is in the same direction as the too tall child,
+	// we can just do one rotation. If not we need to do
+	// a rotation in the child tree to get it set up.
+	if (TREE_HEIGHT(subtree->links[dir])+1 != subtree->height) {
+		set_child(root, dir, avl_rotate(subtree, dir));
+	}
+	return avl_rotate(root, flip_dir(dir));
+}
+
+// insert:
 avl_node_t *avl_node_insert(avl_node_t *root, avl_node_t *data,
                             avl_cmp_func cmp)
 {
-	if (!root) {
-		return data;
-	}
+	if (!root) return data;
 
 	int n = cmp(data->data, root->data);
 
@@ -130,6 +117,8 @@ void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data) {
 
 // delete:
 static void swap_nodes(avl_node_t *node1, avl_node_t *node2) {
+	// Swapping tree nodes is a lot easier when you don't care about
+	// what object is in use and just can swap data pointers. Oh well.
 	avl_node_t temp = *node1;
 	set_left(node1, node2->left);
 	set_right(node1, node2->right);
@@ -180,9 +169,6 @@ void avl_node_delete(avl_node_t *node) {
 		tofix = parent;
 	}
 }
-
-
-
 
 //
 avl_node_t *avl_node_first(avl_node_t *node) {
@@ -275,11 +261,4 @@ static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir) {
 	avl_update_height(replacement);
 
 	return replacement;
-}
-
-static avl_node_t *avl_rotate_right(avl_node_t *node) {
-	return avl_rotate(node, AVL_RIGHT);
-}
-static avl_node_t *avl_rotate_left(avl_node_t *node) {
-	return avl_rotate(node, AVL_LEFT);
 }
