@@ -40,10 +40,16 @@ void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data);
 // node-level stuff that definitely needs exposed
 avl_node_t *avl_node_first(avl_node_t *node);
 avl_node_t *avl_node_next(avl_node_t *node);
-static inline avl_node_t *avl_get_root(avl_tree_t *root) {
-	return root->dummy.right; }
+static inline avl_node_t *avl_get_root(avl_tree_t *tree) {
+	return tree->dummy.right;
+}
+static inline avl_node_t *avl_first(avl_tree_t *tree) {
+	return avl_node_first(avl_get_root(tree));
+}
 
-void avl_check_invariant(avl_node_t *root);
+void avl_check_node(avl_node_t *root);
+void avl_check_tree(avl_tree_t *tree);
+
 
 
 

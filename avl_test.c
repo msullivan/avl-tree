@@ -38,8 +38,8 @@ void avl_display(avl_node_t *root, int level)
 	avl_display(root->right, level+1);
 }
 
-void avl_iterate(avl_node_t *root) {
-	for (avl_node_t *node = avl_node_first(root); node;
+void avl_iterate(avl_tree_t *tree) {
+	for (avl_node_t *node = avl_first(tree); node;
 		 node = avl_node_next(node)) {
 
 		printf("%d ", P_TO_INT(node->data));
@@ -66,8 +66,8 @@ void debug_crap(avl_tree_t *tree) {
 	avl_node_t *root = avl_get_root(tree);
 	avl_debug(root); printf("\n");
 	avl_display(root, 0);
-	avl_check_invariant(root);
-	avl_iterate(root);
+	avl_check_tree(tree);
+	avl_iterate(tree);
 }
 
 int gen() {

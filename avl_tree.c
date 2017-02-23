@@ -126,7 +126,7 @@ static void swap_nodes(avl_node_t *node1, avl_node_t *node2) {
 	set_child(node2->parent, node2_pdir, node1);
 	set_child(temp.parent, node1_pdir, node2);
 }
-// replaces *in the parent*
+/* replaces *in the parent* */
 static void replace_node(avl_node_t *old_node, avl_node_t *new_node) {
 	avl_dir_t old_pdir = get_parent_dir(old_node);
 	set_child(old_node->parent, old_pdir, new_node);
@@ -142,7 +142,7 @@ void avl_node_delete(avl_node_t *node) {
 			replacement = node->left;
 			break;
 		} else {
-			// This is the hard case!
+			/* this is the hard case! */
 			avl_node_t *next = avl_node_next(node);
 			swap_nodes(node, next);
 		}
@@ -186,7 +186,7 @@ avl_node_t *avl_node_next(avl_node_t *node) {
 }
 
 
-void avl_check_invariant(avl_node_t *root) {
+void avl_check_node(avl_node_t *root) {
 	int left_height, right_height;
 
 	if (!root)
@@ -206,8 +206,13 @@ void avl_check_invariant(avl_node_t *root) {
 		abort();
 	}
 
-	avl_check_invariant(root->left);
-	avl_check_invariant(root->right);
+	avl_check_node(root->left);
+	avl_check_node(root->right);
+}
+void avl_check_tree(avl_tree_t *tree) {
+	avl_node_t *root = avl_get_root(tree);
+	assert(!root || root->parent == &tree->dummy);
+	avl_check_node(root);
 }
 
 static void avl_update_height(avl_node_t *node)
