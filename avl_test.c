@@ -58,9 +58,9 @@ int test_cmp(void *p, void *q)
 	return P_TO_INT(p) - P_TO_INT(q);
 }
 
-#define NUM_ELEMS 100
+#define NUM_ELEMS 1000
 #define NUM_DELS 10
-#define MAX_VAL 100
+#define MAX_VAL 1000
 
 void debug_crap(avl_tree_t *tree) {
 	avl_node_t *root = avl_get_root(tree);
@@ -93,7 +93,7 @@ int main(void)
 		debug_crap(tree);
 	}
 
-	for (i = 0; i < NUM_DELS; i++) {
+	for (i = 0; i < NUM_DELS; ) {
 		n = gen() % MAX_VAL;
 		avl_node_t *node = avl_lookup(tree, INT_TO_P(n));
 		if (!node) continue;
@@ -101,8 +101,8 @@ int main(void)
 		printf("deleting %d\n", n);
 		avl_node_delete(node);
 
-
 		debug_crap(tree);
+		i++;
 	}
 
 
