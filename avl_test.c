@@ -58,7 +58,7 @@ int test_cmp(void *p, void *q, void *arg)
 	return P_TO_INT(p) - P_TO_INT(q);
 }
 
-#define NUM_ELEMS 1000
+#define NUM_ELEMS 100
 #define NUM_DELS 10
 #define MAX_VAL 1000
 
@@ -73,6 +73,13 @@ void debug_crap(avl_tree_t *tree) {
 int gen() {
 //	static int num = 0; return ++num;
 	return rand();
+}
+
+void lookup2_test(avl_tree_t *tree, int n) {
+	avl_node_t *node = avl_lookup_ge(tree, INT_TO_P(n));
+	printf("lge(%d) = %d\n", n, node ? P_TO_INT(node->data) : -1);
+	node = avl_lookup_le(tree, INT_TO_P(n));
+	printf("lle(%d) = %d\n", n, node ? P_TO_INT(node->data) : -1);
 }
 
 int main(void)
@@ -105,6 +112,10 @@ int main(void)
 		i++;
 	}
 
+	lookup2_test(tree, 5);
+	lookup2_test(tree, 327);
+	lookup2_test(tree, 328);
+	lookup2_test(tree, 1000);
 
 	return 0;
 }

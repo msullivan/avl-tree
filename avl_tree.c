@@ -97,9 +97,26 @@ avl_node_t *avl_core_lookup(avl_tree_t *tree,
 	return node;
 }
 
-avl_node_t *avl_lookup(avl_tree_t *tree, void *data)
-{
+avl_node_t *avl_lookup(avl_tree_t *tree, void *data) {
 	return avl_core_lookup(tree, tree->lookup_cmp, data, NULL, NULL);
+}
+
+/* find the node that is the closest to where the value /would/ go,
+ * in direction 'dir' */
+avl_node_t *avl_lookup_close(avl_tree_t *tree, void *data, avl_dir_t dir) {
+	avl_node_t *parent;
+	avl_dir_t insert_dir;
+	avl_node_t *node = avl_core_lookup(tree, tree->lookup_cmp, data,
+	                                   &parent, &insert_dir);
+	if (node || is_dummy(parent)) return node;
+	if (insert_dir != dir) return parent;
+	return avl_step(parent, dir);
+}
+avl_node_t *avl_lookup_ge(avl_tree_t *tree, void *data) {
+	return avl_lookup_close(tree, data, AVL_RIGHT);
+}
+avl_node_t *avl_lookup_le(avl_tree_t *tree, void *data) {
+	return avl_lookup_close(tree, data, AVL_LEFT);
 }
 
 // node repair, used by insert and delete
@@ -252,7 +269,7 @@ int avl_check_node(avl_node_t *node) {
 
 	if (abs(left_height - right_height) > 1) {
 		fprintf(stderr,
-		        "invariant violated at %p(%p/%zd)! heights: left=%d, right=%d\n",
+		        "invariant violated at %p(%p/%zd)! height: left=%d, right=%d\n",
 		        node, node->data, (size_t)node->data,
 		        left_height, right_height);
 		abort();
