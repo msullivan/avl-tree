@@ -22,7 +22,7 @@ void avl_node_init(avl_node_t *node)
 	node->height = 1;
 }
 int avl_init(avl_tree_t *tree,
-             avl_cmp_func lookup_cmp, avl_cmp_func insert_cmp, void *arg)
+             avl_cmp_func *lookup_cmp, avl_cmp_func *insert_cmp, void *arg)
 {
 	avl_node_init(&tree->dummy);
 	tree->lookup_cmp = lookup_cmp;

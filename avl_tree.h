@@ -1,7 +1,7 @@
 #ifndef __AVL_TREE_H
 #define __AVL_TREE_H
 
-typedef int (*avl_cmp_func)(void *, void *, void *);
+typedef int avl_cmp_func(void *, void *, void *);
 
 typedef enum avl_dir_t { AVL_LEFT, AVL_RIGHT }
 	avl_dir_t;
@@ -23,8 +23,8 @@ typedef struct avl_tree_t {
 	avl_node_t dummy;
 
 	void *arg;
-	avl_cmp_func lookup_cmp;
-	avl_cmp_func insert_cmp;
+	avl_cmp_func *lookup_cmp;
+	avl_cmp_func *insert_cmp;
 } avl_tree_t;
 
 #define AVL_NODE_INIT {NULL, {NULL, NULL}, NULL, 1, -1}
@@ -32,7 +32,7 @@ typedef struct avl_tree_t {
 //// Definite API things
 void avl_node_init(avl_node_t *node);
 int avl_init(avl_tree_t *tree,
-             avl_cmp_func lookup_cmp, avl_cmp_func insert_cmp,
+             avl_cmp_func *lookup_cmp, avl_cmp_func *insert_cmp,
              void *arg);
 avl_node_t *avl_lookup(avl_tree_t *tree, void *data);
 avl_node_t *avl_lookup_close(avl_tree_t *tree, void *data, avl_dir_t dir);
