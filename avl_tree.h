@@ -3,8 +3,6 @@
 
 typedef int (*avl_cmp_func)(void *, void *, void *);
 
-//typedef enum avl_balance_t { LEFT_HIGHER, RIGHT_HIGHER, SIDES_EQUAL }
-//	avl_balance_t;
 typedef enum avl_dir_t { AVL_LEFT, AVL_RIGHT }
 	avl_dir_t;
 
