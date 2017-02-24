@@ -40,7 +40,6 @@ static inline void set_child(avl_node_t *root, avl_dir_t dir,
                              avl_node_t *child) {
 	root->links[dir] = child;
 	if (child) child->parent = root;
-	avl_update_height(root);
 }
 static inline avl_dir_t get_parent_dir(avl_node_t *node) {
 	avl_node_t *parent = node->parent;
@@ -59,6 +58,9 @@ static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir) {
 
 	set_child(node, odir, replacement->links[dir]);
 	set_child(replacement, dir, node);
+
+	avl_update_height(node);
+	avl_update_height(replacement);
 
 	return replacement;
 }
