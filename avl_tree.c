@@ -22,11 +22,12 @@ void avl_node_init(avl_node_t *node)
 	node->height = 1;
 }
 int avl_init(avl_tree_t *tree,
-             avl_cmp_func lookup_cmp, avl_cmp_func insert_cmp)
+             avl_cmp_func lookup_cmp, avl_cmp_func insert_cmp, void *arg)
 {
 	avl_node_init(&tree->dummy);
 	tree->lookup_cmp = lookup_cmp;
 	tree->insert_cmp = insert_cmp;
+	tree->arg = arg;
 	return 0;
 }
 
@@ -74,9 +75,10 @@ avl_node_t *avl_core_lookup(avl_tree_t *tree,
 	avl_node_t *parent = &tree->dummy;
 	avl_dir_t dir = AVL_RIGHT;
 	avl_node_t *node = avl_get_root(tree);
+	void *arg = tree->arg;
 
 	while (node) {
-		int n = cmp(data, node->data);
+		int n = cmp(data, node->data, arg);
 
 		if (n == 0) {
 			break;

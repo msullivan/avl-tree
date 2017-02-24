@@ -53,7 +53,7 @@ int test_print(void *p)
 	return 0;
 }
 
-int test_cmp(void *p, void *q)
+int test_cmp(void *p, void *q, void *arg)
 {
 	return P_TO_INT(p) - P_TO_INT(q);
 }
@@ -80,7 +80,7 @@ int main(void)
 	int n, i;
 	avl_tree_t stree;
 	avl_tree_t *tree = &stree;
-	avl_init(tree, test_cmp, test_cmp);
+	avl_init(tree, test_cmp, test_cmp, NULL);
 
 	for (i = 0; i < NUM_ELEMS; i++) {
 		n = gen() % MAX_VAL;

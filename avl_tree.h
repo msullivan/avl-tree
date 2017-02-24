@@ -1,7 +1,7 @@
 #ifndef __AVL_TREE_H
 #define __AVL_TREE_H
 
-typedef int (*avl_cmp_func)(void *, void *);
+typedef int (*avl_cmp_func)(void *, void *, void *);
 
 //typedef enum avl_balance_t { LEFT_HIGHER, RIGHT_HIGHER, SIDES_EQUAL }
 //	avl_balance_t;
@@ -24,6 +24,7 @@ typedef struct avl_node_t {
 typedef struct avl_tree_t {
 	avl_node_t dummy;
 
+	void *arg;
 	avl_cmp_func lookup_cmp;
 	avl_cmp_func insert_cmp;
 } avl_tree_t;
@@ -33,7 +34,8 @@ typedef struct avl_tree_t {
 //// Definite API things
 void avl_node_init(avl_node_t *node);
 int avl_init(avl_tree_t *tree,
-             avl_cmp_func lookup_cmp, avl_cmp_func insert_cmp);
+             avl_cmp_func lookup_cmp, avl_cmp_func insert_cmp,
+             void *arg);
 avl_node_t *avl_lookup(avl_tree_t *tree, void *data);
 void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data);
 void avl_delete(avl_tree_t *tree, avl_node_t *node);
