@@ -87,7 +87,7 @@ int main(void)
 	int n, i;
 	avl_tree_t stree;
 	avl_tree_t *tree = &stree;
-	avl_init(tree, test_cmp, test_cmp, NULL);
+	avl_init(tree, test_cmp, test_cmp, NULL, NULL);
 
 	for (i = 0; i < NUM_ELEMS; i++) {
 		n = gen() % MAX_VAL;

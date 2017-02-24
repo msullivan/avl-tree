@@ -22,7 +22,9 @@ void avl_node_init(avl_node_t *node)
 	node->height = 1;
 }
 int avl_init(avl_tree_t *tree,
-             avl_cmp_func *lookup_cmp, avl_cmp_func *insert_cmp, void *arg)
+             avl_cmp_func *lookup_cmp, avl_cmp_func *insert_cmp,
+             avl_combine_func *combine,
+             void *arg)
 {
 	avl_node_init(&tree->dummy);
 	tree->lookup_cmp = lookup_cmp;
@@ -32,8 +34,9 @@ int avl_init(avl_tree_t *tree,
 }
 
 // core manipulation/query routines
-static void avl_update_height(avl_node_t *node) {
+static void avl_update(avl_tree_t *tree, avl_node_t *node) {
 	node->height = max(TREE_HEIGHT(node->left), TREE_HEIGHT(node->right)) + 1;
+	if (tree->combine) tree->combine(node, tree->arg);
 }
 
 static inline void set_child(avl_node_t *root, avl_dir_t dir,
@@ -49,7 +52,8 @@ static inline avl_dir_t get_parent_dir(avl_node_t *node) {
 }
 
 // rotates around node in direction 'dir'
-static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir) {
+static avl_node_t *avl_rotate(avl_tree_t *tree,
+                              avl_node_t *node, avl_dir_t dir) {
 	avl_dir_t odir = flip_dir(dir);
 
 	avl_node_t *replacement = node->links[odir];
@@ -59,8 +63,8 @@ static avl_node_t *avl_rotate(avl_node_t *node, avl_dir_t dir) {
 	set_child(node, odir, replacement->links[dir]);
 	set_child(replacement, dir, node);
 
-	avl_update_height(node);
-	avl_update_height(replacement);
+	avl_update(tree, node);
+	avl_update(tree, replacement);
 
 	return replacement;
 }
@@ -126,9 +130,9 @@ static int balance_factor(avl_node_t *root) {
 	return TREE_HEIGHT(root->left) - TREE_HEIGHT(root->right);
 }
 
-static void avl_node_repair(avl_node_t *root)
+static void avl_node_repair(avl_tree_t *tree, avl_node_t *root)
 {
-	avl_update_height(root);
+	avl_update(tree, root);
 	int bal = balance_factor(root);
 	if (abs(bal) <= 1) return;
 
@@ -146,16 +150,16 @@ static void avl_node_repair(avl_node_t *root)
 	// we can just do one rotation. If not we need to do
 	// a rotation in the child tree to get it set up.
 	if (TREE_HEIGHT(subtree->links[dir])+1 != subtree->height) {
-		set_child(root, dir, avl_rotate(subtree, dir));
+		set_child(root, dir, avl_rotate(tree, subtree, dir));
 	}
-	set_child(parent, pdir, avl_rotate(root, flip_dir(dir)));
+	set_child(parent, pdir, avl_rotate(tree, root, flip_dir(dir)));
 }
 
 /* Update the structure back up to the root */
-static void avl_chain_repair(avl_node_t *node) {
+static void avl_chain_repair(avl_tree_t *tree, avl_node_t *node) {
 	while (!is_dummy(node)) {
 		avl_node_t *parent = node->parent;
-		avl_node_repair(node);
+		avl_node_repair(tree, node);
 		node = parent;
 	}
 }
@@ -172,7 +176,7 @@ void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data) {
 	assert(!existing); // XXX: do something less awful?
 
 	set_child(parent, dir, node);
-	avl_chain_repair(parent);
+	avl_chain_repair(tree, parent);
 }
 
 // delete:
@@ -215,7 +219,7 @@ void avl_delete(avl_tree_t *tree, avl_node_t *node) {
 
 	avl_node_t *tofix = node->parent;
 	replace_node(node, replacement);
-	avl_chain_repair(tofix);
+	avl_chain_repair(tree, tofix);
 }
 
 // tree traversal
