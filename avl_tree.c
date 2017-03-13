@@ -49,9 +49,6 @@ static inline void set_child(avl_node_t *root, avl_dir_t dir,
 		child->pdir = dir;
 	}
 }
-static inline avl_dir_t get_parent_dir(avl_node_t *node) {
-	return node->pdir;
-}
 
 // rotates around node in direction 'dir'
 static avl_node_t *avl_rotate(avl_tree_t *tree,
@@ -139,7 +136,7 @@ static void avl_node_repair(avl_tree_t *tree, avl_node_t *root)
 	if (abs(bal) <= 1) return;
 
 	// Grab what we need to update parent of the rotation
-	avl_dir_t pdir = get_parent_dir(root);
+	avl_dir_t pdir = root->pdir;
 	avl_node_t *parent = root->parent;
 
 	// We need to do repair. Which side is too tall?
@@ -185,22 +182,16 @@ void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data) {
 static void swap_nodes(avl_node_t *node1, avl_node_t *node2) {
 	// Swapping tree nodes is a lot easier when you don't care about
 	// what object is in use and just can swap data pointers. Oh well.
+	// Note that node2 might be node1's child, which means we need to do
+	// the parent swap after the child swaps, in order to fix up that case.
 	avl_node_t temp = *node1;
 	set_child(node1, AVL_LEFT, node2->left);
 	set_child(node1, AVL_RIGHT, node2->right);
 	set_child(node2, AVL_LEFT, temp.left);
 	set_child(node2, AVL_RIGHT, temp.right);
 
-	avl_dir_t node1_pdir = get_parent_dir(node1);
-	avl_dir_t node2_pdir = get_parent_dir(node2);
-
-	set_child(node2->parent, node2_pdir, node1);
-	set_child(temp.parent, node1_pdir, node2);
-}
-/* replaces *in the parent* */
-static void replace_node(avl_node_t *old_node, avl_node_t *new_node) {
-	avl_dir_t old_pdir = get_parent_dir(old_node);
-	set_child(old_node->parent, old_pdir, new_node);
+	set_child(node2->parent, node2->pdir, node1);
+	set_child(temp.parent, temp.pdir, node2);
 }
 
 void avl_delete(avl_tree_t *tree, avl_node_t *node) {
@@ -220,7 +211,7 @@ void avl_delete(avl_tree_t *tree, avl_node_t *node) {
 	}
 
 	avl_node_t *tofix = node->parent;
-	replace_node(node, replacement);
+	set_child(tofix, node->pdir, replacement);
 	avl_chain_repair(tree, tofix);
 }
 
@@ -249,7 +240,7 @@ avl_node_t *avl_step(avl_node_t *node, avl_dir_t dir) {
 	// there is some annoying fiddliness/redundancy in the stopping
 	// condition, since it actually differs between left and right
 	// traversal.
-	while (node->parent && dir == get_parent_dir(node)) {
+	while (node->parent && dir == node->pdir) {
 		node = node->parent;
 	}
 	if (!node->parent || is_dummy(node->parent)) return NULL;
