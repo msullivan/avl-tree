@@ -29,6 +29,7 @@ int avl_init(avl_tree_t *tree,
 	avl_node_init(&tree->dummy);
 	tree->lookup_cmp = lookup_cmp;
 	tree->insert_cmp = insert_cmp;
+	tree->combine = combine;
 	tree->arg = arg;
 	return 0;
 }
