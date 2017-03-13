@@ -85,21 +85,25 @@ void lookup2_test(avl_tree_t *tree, int n) {
 	printf("lle(%d) = %d\n", n, node ? P_TO_INT(node->data) : -1);
 }
 
+// turn a tree into a singly linked list, linked through ->right
+// this depends on knowing that the ->right pointer won't be
+// inspected after a node has already been returned while
+// traversing backwards
+avl_node_t *fux_tree(avl_tree_t *tree) {
+	avl_node_t *next = NULL;
+	for (avl_node_t *node = avl_last(tree); node; node = avl_prev(node)) {
+		node->right = next;
+		next = node;
+	}
+	return next;
+}
 void delete_tree(avl_tree_t *tree) {
+	avl_node_t *head = fux_tree(tree);
 	avl_node_t *next;
-	// It takes O(n lg n) time to deconstruct the tree, which is
-	// kind of a bummer!
-	// There are ways to do it better. Should just be O(n).
-	// Trickiness is that the iteration order we use visits nodes
-	// before they can safely be free()d.
-	// So instead we just do regular deletes, which keeps the tree working
-	// right.
-	for (avl_node_t *node = avl_first(tree); node; node = next) {
-		next = avl_next(node);
-		avl_delete(tree, node);
+	for (avl_node_t *node = head; node; node = next) {
+		next = node->right;
 		free(node);
 	}
-
 }
 
 int main(void)
