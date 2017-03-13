@@ -234,18 +234,17 @@ avl_node_t *avl_node_last(avl_node_t *node) {
 avl_node_t *avl_step(avl_node_t *node, avl_dir_t dir) {
 	avl_dir_t odir = flip_dir(dir);
 	if (!node) return NULL;
+	// Return the leftmost node in our right subtree (or vice versa)
 	if (node->links[dir]) {
 		return avl_node_end(node->links[dir], odir);
 	}
-	// there is some annoying fiddliness/redundancy in the stopping
-	// condition, since it actually differs between left and right
-	// traversal.
-	while (node->parent && dir == node->pdir) {
+	// No right subtree, so climb back up the tree until we find a node
+	// that we are the left child of (or vice versa).
+	for (;;) {
+		if (is_root(node)) return NULL;
+		if (dir != node->pdir) return node->parent;
 		node = node->parent;
 	}
-	if (!node->parent || is_dummy(node->parent)) return NULL;
-	assert(node == node->parent->links[odir]);
-	return node->parent;
 }
 avl_node_t *avl_next(avl_node_t *node) {
 	return avl_step(node, AVL_RIGHT);
