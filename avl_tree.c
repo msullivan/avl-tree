@@ -12,8 +12,7 @@ static inline int tree_height(avl_node_t *n) { return n ? n->height : 0; }
 
 static inline int max(int x, int y) { return x > y ? x : y; }
 
-void avl_node_init(avl_node_t *node)
-{
+void avl_node_init(avl_node_t *node) {
 	node->parent = NULL;
 	node->pdir = -1;
 	node->left = NULL;
@@ -24,8 +23,7 @@ void avl_node_init(avl_node_t *node)
 int avl_init(avl_tree_t *tree,
              avl_cmp_func *lookup_cmp, avl_cmp_func *insert_cmp,
              avl_combine_func *combine,
-             void *arg)
-{
+             void *arg) {
 	avl_node_init(&tree->dummy);
 	tree->lookup_cmp = lookup_cmp;
 	tree->insert_cmp = insert_cmp;
@@ -74,8 +72,7 @@ avl_node_t *avl_core_lookup(avl_tree_t *tree,
                             avl_cmp_func cmp,
                             void *data,
                             avl_node_t **parent_out,
-                            avl_dir_t *dir_out)
-{
+                            avl_dir_t *dir_out) {
 	avl_node_t *parent = &tree->dummy;
 	avl_dir_t dir = AVL_RIGHT;
 	avl_node_t *node = avl_get_root(tree);
@@ -128,8 +125,7 @@ static int balance_factor(avl_node_t *root) {
 	return tree_height(root->left) - tree_height(root->right);
 }
 
-static void avl_node_repair(avl_tree_t *tree, avl_node_t *root)
-{
+static void avl_node_repair(avl_tree_t *tree, avl_node_t *root) {
 	avl_update(tree, root);
 	int bal = balance_factor(root);
 	if (abs(bal) <= 1) return;
