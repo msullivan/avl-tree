@@ -82,6 +82,23 @@ void lookup2_test(avl_tree_t *tree, int n) {
 	printf("lle(%d) = %d\n", n, node ? P_TO_INT(node->data) : -1);
 }
 
+void delete_tree(avl_tree_t *tree) {
+	avl_node_t *next;
+	// It takes O(n lg n) time to deconstruct the tree, which is
+	// kind of a bummer!
+	// There are ways to do it better. Should just be O(n).
+	// Trickiness is that the iteration order we use visits nodes
+	// before they can safely be free()d.
+	// So instead we just do regular deletes, which keeps the tree working
+	// right.
+	for (avl_node_t *node = avl_first(tree); node; node = next) {
+		next = avl_next(node);
+		avl_delete(tree, node);
+		free(node);
+	}
+
+}
+
 int main(void)
 {
 	int n, i;
@@ -107,6 +124,7 @@ int main(void)
 
 		printf("deleting %d\n", n);
 		avl_delete(tree, node);
+		free(node);
 
 		debug_crap(tree);
 		i++;
@@ -116,6 +134,8 @@ int main(void)
 	lookup2_test(tree, 327);
 	lookup2_test(tree, 328);
 	lookup2_test(tree, 1000);
+
+	delete_tree(tree);
 
 	return 0;
 }
