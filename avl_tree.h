@@ -6,6 +6,7 @@ typedef enum avl_dir_t { AVL_LEFT, AVL_RIGHT }
 
 typedef struct avl_node_t {
 	struct avl_node_t *parent;
+	avl_dir_t pdir;
 	union {
 		struct {
 			struct avl_node_t *left;

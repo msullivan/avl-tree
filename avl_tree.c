@@ -16,6 +16,7 @@ static inline int max(int x, int y) { return x > y ? x : y; }
 void avl_node_init(avl_node_t *node)
 {
 	node->parent = NULL;
+	node->pdir = -1;
 	node->left = NULL;
 	node->right = NULL;
 	node->data = NULL;
@@ -43,13 +44,13 @@ static void avl_update(avl_tree_t *tree, avl_node_t *node) {
 static inline void set_child(avl_node_t *root, avl_dir_t dir,
                              avl_node_t *child) {
 	root->links[dir] = child;
-	if (child) child->parent = root;
+	if (child) {
+		child->parent = root;
+		child->pdir = dir;
+	}
 }
 static inline avl_dir_t get_parent_dir(avl_node_t *node) {
-	avl_node_t *parent = node->parent;
-	if (parent->left == node) return AVL_LEFT;
-	assert(parent->right == node);
-	return AVL_RIGHT;
+	return node->pdir;
 }
 
 // rotates around node in direction 'dir'
@@ -268,8 +269,7 @@ int avl_check_node(avl_node_t *node) {
 
 	if (!node) return 0;
 
-	assert(!node->left || node->left->parent == node);
-	assert(!node->right || node->right->parent == node);
+	assert(node->parent->links[node->pdir] == node);
 
 	left_height = TREE_HEIGHT(node->left);
 	right_height = TREE_HEIGHT(node->right);
