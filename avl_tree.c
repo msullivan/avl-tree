@@ -4,12 +4,11 @@
 
 #include "avl_tree.h"
 
-#define TREE_HEIGHT(n) ((n) ? ((n)->height) : 0)
-
 static inline avl_dir_t flip_dir(avl_dir_t dir) { return !dir; }
 
 static inline int is_dummy(avl_node_t *node) { return !node->parent; }
 static inline int is_root(avl_node_t *node) { return is_dummy(node->parent); }
+static inline int tree_height(avl_node_t *n) { return n ? n->height : 0; }
 
 static inline int max(int x, int y) { return x > y ? x : y; }
 
@@ -37,7 +36,7 @@ int avl_init(avl_tree_t *tree,
 
 // core manipulation/query routines
 static void avl_update(avl_tree_t *tree, avl_node_t *node) {
-	node->height = max(TREE_HEIGHT(node->left), TREE_HEIGHT(node->right)) + 1;
+	node->height = max(tree_height(node->left), tree_height(node->right)) + 1;
 	if (tree->combine) tree->combine(node, tree->arg);
 }
 
@@ -126,7 +125,7 @@ avl_node_t *avl_lookup_le(avl_tree_t *tree, void *data) {
 
 // node repair, used by insert and delete
 static int balance_factor(avl_node_t *root) {
-	return TREE_HEIGHT(root->left) - TREE_HEIGHT(root->right);
+	return tree_height(root->left) - tree_height(root->right);
 }
 
 static void avl_node_repair(avl_tree_t *tree, avl_node_t *root)
@@ -148,7 +147,7 @@ static void avl_node_repair(avl_tree_t *tree, avl_node_t *root)
 	// If it is in the same direction as the too tall child,
 	// we can just do one rotation. If not we need to do
 	// a rotation in the child tree to get it set up.
-	if (TREE_HEIGHT(subtree->links[dir])+1 != subtree->height) {
+	if (tree_height(subtree->links[dir])+1 != subtree->height) {
 		set_child(root, dir, avl_rotate(tree, subtree, dir));
 	}
 	set_child(parent, pdir, avl_rotate(tree, root, flip_dir(dir)));
@@ -260,8 +259,8 @@ int avl_check_node(avl_node_t *node) {
 
 	assert(node->parent->links[node->pdir] == node);
 
-	left_height = TREE_HEIGHT(node->left);
-	right_height = TREE_HEIGHT(node->right);
+	left_height = tree_height(node->left);
+	right_height = tree_height(node->right);
 
 	if (abs(left_height - right_height) > 1) {
 		fprintf(stderr,
