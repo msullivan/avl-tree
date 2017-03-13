@@ -39,7 +39,7 @@ int avl_init(avl_tree_t *tree,
              avl_combine_func *combine,
              void *arg);
 avl_node_t *avl_lookup(avl_tree_t *tree, void *data);
-avl_node_t *avl_lookup_close(avl_tree_t *tree, void *data, avl_dir_t dir);
+avl_node_t *avl_lookup_closest(avl_tree_t *tree, void *data, avl_dir_t dir);
 avl_node_t *avl_lookup_ge(avl_tree_t *tree, void *data);
 avl_node_t *avl_lookup_le(avl_tree_t *tree, void *data);
 void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data);

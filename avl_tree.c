@@ -69,8 +69,8 @@ static avl_node_t *avl_rotate(avl_tree_t *tree,
 }
 
 // lookup:
-/* Do a lookup, but also compute where the node would be
- * inserted if it *doesn't* exist in the tree. */
+// Do a lookup, but also compute where the node would be
+// inserted if it *doesn't* exist in the tree.
 avl_node_t *avl_core_lookup(avl_tree_t *tree,
                             avl_cmp_func cmp,
                             void *data,
@@ -106,9 +106,9 @@ avl_node_t *avl_lookup(avl_tree_t *tree, void *data) {
 	return avl_core_lookup(tree, tree->lookup_cmp, data, NULL, NULL);
 }
 
-/* find the node that is the closest to where the value /would/ go,
- * in direction 'dir' */
-avl_node_t *avl_lookup_close(avl_tree_t *tree, void *data, avl_dir_t dir) {
+// find the node that is the closest to where the value /would/ go,
+// in direction 'dir'
+avl_node_t *avl_lookup_closest(avl_tree_t *tree, void *data, avl_dir_t dir) {
 	avl_node_t *parent;
 	avl_dir_t insert_dir;
 	avl_node_t *node = avl_core_lookup(tree, tree->lookup_cmp, data,
@@ -118,10 +118,10 @@ avl_node_t *avl_lookup_close(avl_tree_t *tree, void *data, avl_dir_t dir) {
 	return avl_step(parent, dir);
 }
 avl_node_t *avl_lookup_ge(avl_tree_t *tree, void *data) {
-	return avl_lookup_close(tree, data, AVL_RIGHT);
+	return avl_lookup_closest(tree, data, AVL_RIGHT);
 }
 avl_node_t *avl_lookup_le(avl_tree_t *tree, void *data) {
-	return avl_lookup_close(tree, data, AVL_LEFT);
+	return avl_lookup_closest(tree, data, AVL_LEFT);
 }
 
 // node repair, used by insert and delete
@@ -154,7 +154,7 @@ static void avl_node_repair(avl_tree_t *tree, avl_node_t *root)
 	set_child(parent, pdir, avl_rotate(tree, root, flip_dir(dir)));
 }
 
-/* Update the structure back up to the root */
+// Update the structure back up to the root
 static void avl_chain_repair(avl_tree_t *tree, avl_node_t *node) {
 	while (!is_dummy(node)) {
 		avl_node_t *parent = node->parent;
@@ -204,9 +204,8 @@ void avl_delete(avl_tree_t *tree, avl_node_t *node) {
 			replacement = node->left;
 			break;
 		} else {
-			/* this is the hard case! */
-			avl_node_t *next = avl_next(node);
-			swap_nodes(node, next);
+			// this is the hard^Wfun case!
+			swap_nodes(node, avl_next(node));
 		}
 	}
 
@@ -216,7 +215,7 @@ void avl_delete(avl_tree_t *tree, avl_node_t *node) {
 }
 
 // tree traversal
-/* find the leftmost or rightmost node, depending on dir */
+// find the leftmost or rightmost node, depending on dir
 avl_node_t *avl_node_end(avl_node_t *node, avl_dir_t dir) {
 	if (!node) return node;
 	while (node->links[dir]) {
@@ -230,7 +229,7 @@ avl_node_t *avl_node_first(avl_node_t *node) {
 avl_node_t *avl_node_last(avl_node_t *node) {
 	return avl_node_end(node, AVL_RIGHT);
 }
-/* step left or right in the tree */
+// step left or right in the tree
 avl_node_t *avl_step(avl_node_t *node, avl_dir_t dir) {
 	avl_dir_t odir = flip_dir(dir);
 	if (!node) return NULL;
