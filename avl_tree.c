@@ -71,7 +71,7 @@ static avl_node_t *avl_rotate(avl_tree_t *tree,
 
 // lookup:
 /* Do a lookup, but also compute where the node would be
- * inserted if it *does't* exist in the tree. */
+ * inserted if it *doesn't* exist in the tree. */
 avl_node_t *avl_core_lookup(avl_tree_t *tree,
                             avl_cmp_func cmp,
                             void *data,
