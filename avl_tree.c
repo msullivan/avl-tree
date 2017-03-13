@@ -248,7 +248,7 @@ avl_node_t *avl_step(avl_node_t *node, avl_dir_t dir) {
 	// there is some annoying fiddliness/redundancy in the stopping
 	// condition, since it actually differs between left and right
 	// traversal.
-	while (node->parent && node == node->parent->links[dir]) {
+	while (node->parent && dir == get_parent_dir(node)) {
 		node = node->parent;
 	}
 	if (!node->parent || is_dummy(node->parent)) return NULL;
