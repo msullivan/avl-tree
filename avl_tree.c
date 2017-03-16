@@ -137,7 +137,6 @@ static void avl_node_repair(avl_tree_t *tree, avl_node_t *root) {
 	// We need to do repair. Which side is too tall?
 	avl_dir_t dir = bal >= 1 ? AVL_LEFT : AVL_RIGHT;
 
-	// Needs repair.
 	avl_node_t *subtree = root->links[dir];
 	// At most one grandchild subtree can be too tall.
 	// If it is in the same direction as the too tall child,
@@ -227,7 +226,6 @@ avl_node_t *avl_node_last(avl_node_t *node) {
 // step left or right in the tree
 avl_node_t *avl_step(avl_node_t *node, avl_dir_t dir) {
 	avl_dir_t odir = flip_dir(dir);
-	if (!node) return NULL;
 	// Return the leftmost node in our right subtree (or vice versa)
 	if (node->links[dir]) {
 		return avl_node_end(node->links[dir], odir);
@@ -249,22 +247,10 @@ avl_node_t *avl_prev(avl_node_t *node) {
 
 // tree consistency checkers
 int avl_check_node(avl_node_t *node) {
-	int left_height, right_height;
-
 	if (!node) return 0;
 
 	assert(node->parent->links[node->pdir] == node);
-
-	left_height = tree_height(node->left);
-	right_height = tree_height(node->right);
-
-	if (abs(left_height - right_height) > 1) {
-		fprintf(stderr,
-		        "invariant violated at %p(%p/%zd)! height: left=%d, right=%d\n",
-		        node, node->data, (size_t)node->data,
-		        left_height, right_height);
-		abort();
-	}
+	assert(abs(balance_factor(node)) <= 1);
 
 	int real_height = max(avl_check_node(node->left),
 	                      avl_check_node(node->right)) + 1;
