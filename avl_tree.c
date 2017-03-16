@@ -70,7 +70,7 @@ static avl_node_t *avl_rotate(avl_tree_t *tree,
 // inserted if it *doesn't* exist in the tree.
 avl_node_t *avl_core_lookup(avl_tree_t *tree,
                             avl_cmp_func cmp,
-                            void *data,
+                            const void *data,
                             avl_node_t **parent_out,
                             avl_dir_t *dir_out) {
 	avl_node_t *parent = &tree->dummy;
@@ -98,13 +98,14 @@ avl_node_t *avl_core_lookup(avl_tree_t *tree,
 	return node;
 }
 
-avl_node_t *avl_lookup(avl_tree_t *tree, void *data) {
+avl_node_t *avl_lookup(avl_tree_t *tree, const void *data) {
 	return avl_core_lookup(tree, tree->lookup_cmp, data, NULL, NULL);
 }
 
 // find the node that is the closest to where the value /would/ go,
 // in direction 'dir'
-avl_node_t *avl_lookup_closest(avl_tree_t *tree, void *data, avl_dir_t dir) {
+avl_node_t *avl_lookup_closest(avl_tree_t *tree, const void *data,
+                               avl_dir_t dir) {
 	avl_node_t *parent;
 	avl_dir_t insert_dir;
 	avl_node_t *node = avl_core_lookup(tree, tree->lookup_cmp, data,
@@ -113,10 +114,10 @@ avl_node_t *avl_lookup_closest(avl_tree_t *tree, void *data, avl_dir_t dir) {
 	if (insert_dir != dir) return parent;
 	return avl_step(parent, dir);
 }
-avl_node_t *avl_lookup_ge(avl_tree_t *tree, void *data) {
+avl_node_t *avl_lookup_ge(avl_tree_t *tree, const void *data) {
 	return avl_lookup_closest(tree, data, AVL_RIGHT);
 }
-avl_node_t *avl_lookup_le(avl_tree_t *tree, void *data) {
+avl_node_t *avl_lookup_le(avl_tree_t *tree, const void *data) {
 	return avl_lookup_closest(tree, data, AVL_LEFT);
 }
 
@@ -213,7 +214,7 @@ void avl_node_delete(avl_tree_t *tree, avl_node_t *node) {
 	set_child(tofix, node->pdir, replacement);
 	avl_chain_repair(tree, tofix);
 }
-avl_node_t *avl_delete(avl_tree_t *tree, void *data) {
+avl_node_t *avl_delete(avl_tree_t *tree, const void *data) {
 	avl_node_t *node = avl_lookup(tree, data);
 	if (node) avl_node_delete(tree, node);
 	return node;

@@ -116,7 +116,7 @@ int test_print(void *p)
 	return 0;
 }
 
-int test_cmp(void *p, void *q, void *arg)
+int test_cmp(const void *p, const void *q, void *arg)
 {
 	return P_TO_INT(p) - P_TO_INT(q);
 }

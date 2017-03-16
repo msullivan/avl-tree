@@ -18,7 +18,7 @@ typedef struct avl_node_t {
 	void *data;
 } avl_node_t;
 
-typedef int avl_cmp_func(void *, void *, void *);
+typedef int avl_cmp_func(const void *, const void *, void *);
 typedef int avl_combine_func(avl_node_t *, void *);
 
 typedef struct avl_tree_t {
@@ -38,13 +38,14 @@ int avl_init(avl_tree_t *tree,
              avl_cmp_func *lookup_cmp, avl_cmp_func *insert_cmp,
              avl_combine_func *combine,
              void *arg);
-avl_node_t *avl_lookup(avl_tree_t *tree, void *data);
-avl_node_t *avl_lookup_closest(avl_tree_t *tree, void *data, avl_dir_t dir);
-avl_node_t *avl_lookup_ge(avl_tree_t *tree, void *data);
-avl_node_t *avl_lookup_le(avl_tree_t *tree, void *data);
+avl_node_t *avl_lookup(avl_tree_t *tree, const void *data);
+avl_node_t *avl_lookup_closest(avl_tree_t *tree, const void *data,
+                               avl_dir_t dir);
+avl_node_t *avl_lookup_ge(avl_tree_t *tree, const void *data);
+avl_node_t *avl_lookup_le(avl_tree_t *tree, const void *data);
 avl_node_t *avl_insert(avl_tree_t *tree, avl_node_t *node, void *data);
 void avl_node_delete(avl_tree_t *tree, avl_node_t *node);
-avl_node_t *avl_delete(avl_tree_t *tree, void *data);
+avl_node_t *avl_delete(avl_tree_t *tree, const void *data);
 
 // node-level stuff that definitely needs exposed
 avl_node_t *avl_node_end(avl_node_t *node, avl_dir_t dir);
