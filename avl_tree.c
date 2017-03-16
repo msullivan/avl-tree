@@ -136,13 +136,16 @@ static void avl_node_repair(avl_tree_t *tree, avl_node_t *root) {
 
 	// We need to do repair. Which side is too tall?
 	avl_dir_t dir = bal >= 1 ? AVL_LEFT : AVL_RIGHT;
-
 	avl_node_t *subtree = root->links[dir];
-	// At most one grandchild subtree can be too tall.
-	// If it is in the same direction as the too tall child,
-	// we can just do one rotation. If not we need to do
-	// a rotation in the child tree to get it set up.
-	if (tree_height(subtree->links[dir])+1 != subtree->height) {
+
+	// We want to do a rotation so that the too-tall child replaces
+	// the root with a too-tall grandchild as its child.
+	// (After an insert there is at most one too-tall grandchild.
+	// After a delete there might be two.)
+	// If a too-tall grandchild is in the same direction as the
+	// too-tall child, we can just do one rotation. If not we need to
+	// do a rotation in the child tree to get it set up.
+	if (tree_height(subtree->links[!dir])+1 == subtree->height) {
 		set_child(root, dir, avl_rotate(tree, subtree, dir));
 	}
 	set_child(parent, pdir, avl_rotate(tree, root, flip_dir(dir)));
