@@ -121,10 +121,6 @@ int test_cmp(void *p, void *q, void *arg)
 	return P_TO_INT(p) - P_TO_INT(q);
 }
 
-#define NUM_ELEMS 100
-#define NUM_DELS 10
-#define MAX_VAL 1000
-
 void debug_crap(avl_tree_t *tree) {
 	avl_node_t *root = avl_get_root(tree);
 	avl_debug(root); printf("\n");
@@ -161,34 +157,39 @@ void delete_tree2(avl_tree_t *tree) {
 	}
 }
 
-int main(void)
+int main(int argc, char **argv)
 {
+	int num_elems = 100;
+	int num_dels = 50;
+	int max_val = 1000;
+	int debug = 1;
+
 	int n, i;
 	avl_tree_t stree;
 	avl_tree_t *tree = &stree;
 	avl_init(tree, test_cmp, test_cmp, NULL, NULL);
 
-	for (i = 0; i < NUM_ELEMS; i++) {
-		n = gen() % MAX_VAL;
+	for (i = 0; i < num_elems; i++) {
+		n = gen() % max_val;
 		if (avl_lookup(tree, INT_TO_P(n))) continue;
 
 		avl_node_t *node = calloc(1, sizeof(*node));
-		printf("inserting %d\n", n);
+		if (debug) printf("inserting %d\n", n);
 		avl_insert(tree, node, INT_TO_P(n));
 
-		debug_crap(tree);
+		if (debug) debug_crap(tree);
 	}
 
-	for (i = 0; i < NUM_DELS; ) {
-		n = gen() % MAX_VAL;
+	for (i = 0; i < num_dels; ) {
+		n = gen() % max_val;
 		avl_node_t *node = avl_lookup(tree, INT_TO_P(n));
 		if (!node) continue;
 
-		printf("deleting %d\n", n);
+		if (debug) printf("deleting %d\n", n);
 		avl_delete(tree, node);
 		free(node);
 
-		debug_crap(tree);
+		if (debug) debug_crap(tree);
 		i++;
 	}
 
