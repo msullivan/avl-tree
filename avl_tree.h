@@ -5,8 +5,9 @@ typedef enum avl_dir_t { AVL_LEFT, AVL_RIGHT }
 	avl_dir_t;
 
 typedef struct avl_node_t {
-	struct avl_node_t *parent;
+	int height;
 	avl_dir_t pdir;
+	struct avl_node_t *parent;
 	union {
 		struct {
 			struct avl_node_t *left;
@@ -15,7 +16,6 @@ typedef struct avl_node_t {
 		struct avl_node_t *links[2];
 	};
 	void *data;
-	int height;
 } avl_node_t;
 
 typedef int avl_cmp_func(void *, void *, void *);
