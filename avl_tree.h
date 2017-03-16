@@ -42,8 +42,9 @@ avl_node_t *avl_lookup(avl_tree_t *tree, void *data);
 avl_node_t *avl_lookup_closest(avl_tree_t *tree, void *data, avl_dir_t dir);
 avl_node_t *avl_lookup_ge(avl_tree_t *tree, void *data);
 avl_node_t *avl_lookup_le(avl_tree_t *tree, void *data);
-void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data);
-void avl_delete(avl_tree_t *tree, avl_node_t *node);
+avl_node_t *avl_insert(avl_tree_t *tree, avl_node_t *node, void *data);
+void avl_node_delete(avl_tree_t *tree, avl_node_t *node);
+avl_node_t *avl_delete(avl_tree_t *tree, void *data);
 
 // node-level stuff that definitely needs exposed
 avl_node_t *avl_node_end(avl_node_t *node, avl_dir_t dir);

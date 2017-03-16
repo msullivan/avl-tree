@@ -186,7 +186,7 @@ int main(int argc, char **argv)
 		if (!node) continue;
 
 		if (debug) printf("deleting %d\n", n);
-		avl_delete(tree, node);
+		avl_node_delete(tree, node);
 		free(node);
 
 		if (debug) debug_crap(tree);

@@ -161,7 +161,9 @@ static void avl_chain_repair(avl_tree_t *tree, avl_node_t *node) {
 }
 
 // insert:
-void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data) {
+// If the value is already in the tree, don't insert anything and
+// return the existing node. Otherwise return NULL;
+avl_node_t *avl_insert(avl_tree_t *tree, avl_node_t *node, void *data) {
 	avl_node_init(node); // should we do this??
 	node->data = data;
 
@@ -169,10 +171,11 @@ void avl_insert(avl_tree_t *tree, avl_node_t *node, void *data) {
 	avl_dir_t dir;
 	avl_node_t *existing = avl_core_lookup(tree, tree->insert_cmp, data,
 	                                       &parent, &dir);
-	assert(!existing); // XXX: do something less awful?
+	if (existing) return existing;
 
 	set_child(parent, dir, node);
 	avl_chain_repair(tree, parent);
+	return NULL;
 }
 
 // delete:
@@ -191,7 +194,7 @@ static void swap_nodes(avl_node_t *node1, avl_node_t *node2) {
 	set_child(temp.parent, temp.pdir, node2);
 }
 
-void avl_delete(avl_tree_t *tree, avl_node_t *node) {
+void avl_node_delete(avl_tree_t *tree, avl_node_t *node) {
 	avl_node_t *replacement;
 	for (;;) {
 		if (!node->left) {
@@ -209,6 +212,11 @@ void avl_delete(avl_tree_t *tree, avl_node_t *node) {
 	avl_node_t *tofix = node->parent;
 	set_child(tofix, node->pdir, replacement);
 	avl_chain_repair(tree, tofix);
+}
+avl_node_t *avl_delete(avl_tree_t *tree, void *data) {
+	avl_node_t *node = avl_lookup(tree, data);
+	if (node) avl_node_delete(tree, node);
+	return node;
 }
 
 // tree traversal
