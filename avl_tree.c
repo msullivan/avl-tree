@@ -18,6 +18,7 @@ void avl_node_init(avl_node_t *node) {
 	node->left = NULL;
 	node->right = NULL;
 	node->data = NULL;
+	node->child_heights[AVL_LEFT] = node->child_heights[AVL_RIGHT] = 0;
 	node->height = 1;
 }
 int avl_init(avl_tree_t *tree,
@@ -34,13 +35,15 @@ int avl_init(avl_tree_t *tree,
 
 // core manipulation/query routines
 static void avl_update(avl_tree_t *tree, avl_node_t *node) {
-	node->height = max(tree_height(node->left), tree_height(node->right)) + 1;
+	node->height =
+		max(node->child_heights[AVL_LEFT], node->child_heights[AVL_RIGHT]) + 1;
 	if (tree->combine) tree->combine(node, tree->arg);
 }
 
 static inline void set_child(avl_node_t *root, avl_dir_t dir,
                              avl_node_t *child) {
 	root->links[dir] = child;
+	root->child_heights[dir] = tree_height(child);
 	if (child) {
 		child->parent = root;
 		child->pdir = dir;
@@ -57,9 +60,8 @@ static avl_node_t *avl_rotate(avl_tree_t *tree,
 		return node;
 
 	set_child(node, odir, replacement->links[dir]);
-	set_child(replacement, dir, node);
-
 	avl_update(tree, node);
+	set_child(replacement, dir, node);
 	avl_update(tree, replacement);
 
 	return replacement;
@@ -123,11 +125,13 @@ avl_node_t *avl_lookup_le(avl_tree_t *tree, const void *data) {
 
 // node repair, used by insert and delete
 static int balance_factor(avl_node_t *root) {
-	return tree_height(root->left) - tree_height(root->right);
+	return root->child_heights[AVL_LEFT] - root->child_heights[AVL_RIGHT];
 }
 
 static void avl_node_repair(avl_tree_t *tree, avl_node_t *root) {
 	avl_update(tree, root);
+	root->parent->child_heights[root->pdir] = root->height;
+
 	int bal = balance_factor(root);
 	if (abs(bal) <= 1) return;
 
@@ -146,7 +150,7 @@ static void avl_node_repair(avl_tree_t *tree, avl_node_t *root) {
 	// If a too-tall grandchild is in the same direction as the
 	// too-tall child, we can just do one rotation. If not we need to
 	// do a rotation in the child tree to get it set up.
-	if (tree_height(subtree->links[!dir])+1 == subtree->height) {
+	if (subtree->child_heights[!dir]+1 == subtree->height) {
 		set_child(root, dir, avl_rotate(tree, subtree, dir));
 	}
 	set_child(parent, pdir, avl_rotate(tree, root, flip_dir(dir)));
@@ -263,6 +267,9 @@ int avl_check_node(avl_node_t *node) {
 
 	assert(node->parent->links[node->pdir] == node);
 	assert(abs(balance_factor(node)) <= 1);
+
+	assert(node->child_heights[AVL_LEFT] == tree_height(node->left));
+	assert(node->child_heights[AVL_RIGHT] == tree_height(node->right));
 
 	int real_height = max(avl_check_node(node->left),
 	                      avl_check_node(node->right)) + 1;

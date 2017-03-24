@@ -14,6 +14,7 @@ typedef struct avl_node_t {
 		};
 		struct avl_node_t *links[2];
 	};
+	int child_heights[2];
 	void *data;
 } avl_node_t;
 
@@ -29,7 +30,7 @@ typedef struct avl_tree_t {
 	avl_combine_func *combine;
 } avl_tree_t;
 
-#define AVL_NODE_INIT {NULL, {NULL, NULL}, NULL, 1, -1}
+#define AVL_NODE_INIT {0, -1, NULL, {NULL, NULL}, {0, 0}, NULL}
 
 //// Definite API things
 void avl_node_init(avl_node_t *node);

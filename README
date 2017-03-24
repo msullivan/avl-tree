@@ -19,5 +19,6 @@ Some notes:
  * Trees support using different comparison routines for lookup/delete
    and for insert.
  * Nodes do store their full height and update it as necessary. This
-   simplifies a lot of code but is probably bad for performance because
-   it requires pulling child nodes into cache that needn't be.
+   simplifies the code a *lot*, I think.
+   To avoid pulling child nodes into cache spuriously, we cache child
+   heights in parent nodes (which is like a 30% win in my tests).
