@@ -1,0 +1,23 @@
+An implementation of intrusive AVL trees in C.
+
+Some notes:
+ * These trees are "intrusive", which means that the memory for the
+   tree nodes is managed by the caller and they are intended to be
+   embedded inside the objects being tracked by the tree.
+ * Despite this, the library *does* store opaque 'void *' pointers in
+   the nodes so as to not require any macro chicanery to recover the
+   tracked objects and to facilitate using them in a traditionally
+   malloc()-y manner. I am not totally sure this is the right thing.
+ * All of the library routines (except the consistency checkers) are
+   non-recursive, making them suitable for environments with
+   constrained stack sizes.
+ * To facilitate non-recursive operation and amortized constant-time
+   traversal, nodes store parent pointers.
+ * In order to avoid duplicating lots of code for symmetric right and
+   left cases, children are stored in a length-2 array that is indexed
+   by `avl_dir_t`.
+ * Trees support using different comparison routines for lookup/delete
+   and for insert.
+ * Nodes do store their full height and update it as necessary. This
+   simplifies a lot of code but is probably bad for performance because
+   it requires pulling child nodes into cache that needn't be.
