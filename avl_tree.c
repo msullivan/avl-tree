@@ -56,9 +56,6 @@ static avl_node_t *avl_rotate(avl_tree_t *tree,
 	avl_dir_t odir = flip_dir(dir);
 
 	avl_node_t *replacement = node->links[odir];
-	if (!replacement)
-		return node;
-
 	set_child(node, odir, replacement->links[dir]);
 	avl_update(tree, node);
 	set_child(replacement, dir, node);
