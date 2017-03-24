@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include <unistd.h> // getopt
+
 #include "avl_tree.h"
 
 #define INT_TO_P(x) ((void *)(long)(x))
@@ -161,6 +163,26 @@ int main(int argc, char **argv)
 	int num_dels = 50;
 	int max_val = 1000;
 	int debug = 1;
+	int opt;
+	while ((opt = getopt(argc, argv, "i:d:m:q")) != -1) {
+		switch (opt) {
+		case 'i':
+			num_elems = atoi(optarg);
+			break;
+		case 'd':
+			num_dels = atoi(optarg);
+			break;
+		case 'm':
+			max_val = atoi(optarg);
+			break;
+		case 'q':
+			debug = 0;
+			break;
+		default:
+			fprintf(stderr, "wrong\n");
+			return 1;
+		}
+	}
 
 	int n, i;
 	avl_tree_t stree;
