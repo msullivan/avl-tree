@@ -1,8 +1,7 @@
 #ifndef __AVL_TREE_H
 #define __AVL_TREE_H
 
-typedef enum avl_dir_t { AVL_LEFT, AVL_RIGHT }
-	avl_dir_t;
+typedef enum avl_dir_t { AVL_LEFT, AVL_RIGHT } avl_dir_t;
 
 typedef struct avl_node_t {
 	int height;

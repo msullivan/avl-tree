@@ -57,8 +57,6 @@ avl_node_t *postorder_next(avl_node_t *node) {
 }
 
 ////////
-
-
 void avl_debug(avl_node_t *root)
 {
 	int l, r;

@@ -220,7 +220,7 @@ avl_node_t *avl_delete(avl_tree_t *tree, const void *data) {
 	return node;
 }
 
-// tree traversal
+// tree traversal:
 // find the leftmost or rightmost node, depending on dir
 avl_node_t *avl_node_end(avl_node_t *node, avl_dir_t dir) {
 	if (!node) return node;
